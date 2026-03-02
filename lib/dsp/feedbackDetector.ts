@@ -127,9 +127,7 @@ export class FeedbackDetector {
   // MSD (Magnitude Slope Deviation) - from DAFx-16 paper
   private msdBuffer: MSDHistoryBuffer | null = null
   
-  // Phase coherence tracking - DISABLED
-  // NOTE: Web Audio API AnalyserNode.getFloatFrequencyData() only returns magnitude, not phase.
-  // These buffers exist but are never populated. Kept for future AudioWorklet implementation.
+  // Phase coherence tracking
   private phaseBuffer: PhaseHistoryBuffer | null = null
   private lastPhaseData: Float32Array | null = null
   
@@ -142,7 +140,7 @@ export class FeedbackDetector {
   private contentTypeConfidence: number = 0
   
   // Algorithm configuration
-  private algorithmMode: AlgorithmMode = 'msd' // Changed from 'combined' - phase is disabled
+  private algorithmMode: AlgorithmMode = 'combined'
   private fusionConfig: FusionConfig = { ...DEFAULT_FUSION_CONFIG }
   private msdMinFrames: number = MSD_CONSTANTS.MIN_FRAMES_SPEECH
   

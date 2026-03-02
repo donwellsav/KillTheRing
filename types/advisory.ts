@@ -421,7 +421,7 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   maxIssues: 12, // Show more issues for comprehensive tuning
   ignoreWhistle: true,
   preset: 'surgical',
-  mode: 'vocalRing', // Matches DEFAULT_SETTINGS.mode - optimized for speech/vocal feedback
+  mode: 'feedbackHunt', // Matches DEFAULT_SETTINGS.mode for consistency
   aWeightingEnabled: false,
   noiseFloorEnabled: true,
   noiseFloorSampleCount: 160, // Faster noise floor sampling
