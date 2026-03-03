@@ -559,7 +559,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           {/* Top: Large active graph (~60% height) */}
           <div className="flex-[3] min-h-0 p-1.5 sm:p-2 md:p-3 pb-0.5 sm:pb-1">
             <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col">
-              <div className="flex-shrink-0 flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-2">
+              <div className="flex-shrink-0 flex items-center justify-end px-2 py-1 border-b border-border bg-muted/20">
                 <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">
                   {isRunning && spectrum?.noiseFloorDb != null
                     ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
@@ -589,8 +589,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           <div className="hidden landscape:flex flex-[2] min-h-0 gap-1.5 landscape:gap-2 p-1.5 landscape:p-3 pt-0.5 landscape:pt-1">
             {/* Bottom-Left Graph */}
             <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20 flex items-center gap-1">
-              </div>
               <div className="flex-1 min-h-0 pointer-events-none">
                 {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} />}
                 {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
@@ -603,8 +601,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </div>
             {/* Bottom-Right Graph */}
             <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20 flex items-center gap-1">
-              </div>
               <div className="flex-1 min-h-0 pointer-events-none">
                 {bottomRightGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} />}
                 {bottomRightGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
