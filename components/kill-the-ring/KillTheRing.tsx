@@ -411,10 +411,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </section>
             <div className="border-t border-border" />
             <section>
-              <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-            </section>
-            <div className="border-t border-border" />
-            <section>
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
                 <span className="text-primary font-mono">{advisories.length}</span>
@@ -455,21 +451,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
       )}
 
-      {/* ── Algorithm Status Bar (when enabled) ─────────────────── */}
-      {settings.showAlgorithmScores && (
-        <div className="border-b border-border bg-card/50 backdrop-blur-sm">
-          <AlgorithmStatusBar
-            algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
-            contentType={spectrum?.contentType}
-            msdFrameCount={spectrum?.msdFrameCount}
-            isCompressed={spectrum?.isCompressed}
-            compressionRatio={spectrum?.compressionRatio}
-            isRunning={isRunning}
-            showDetailed
-          />
-        </div>
-      )}
-
       {/* ── Error banner ───────────────────────────────────────── */}
       {error && (
         <div className="px-4 py-1.5 bg-destructive/10 border-b border-destructive/20">
@@ -491,9 +472,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 compact
               />
             </div>
-            <div className="border-b border-border p-3 flex-shrink-0 bg-card/50 overflow-y-auto max-h-48">
-              <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-            </div>
             <div className="flex-1 overflow-y-auto p-3">
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
@@ -513,8 +491,17 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
         {/* Desktop: Always-visible left sidebar */}
         <aside className="hidden landscape:flex w-56 xl:w-64 2xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
-          <div className="flex-shrink-0 border-b border-border p-3">
-            <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+          {/* Algorithm status — always visible in sidebar */}
+          <div className="flex-shrink-0 border-b border-border p-2">
+            <AlgorithmStatusBar
+              algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
+              contentType={spectrum?.contentType}
+              msdFrameCount={spectrum?.msdFrameCount}
+              isCompressed={spectrum?.isCompressed}
+              compressionRatio={spectrum?.compressionRatio}
+              isRunning={isRunning}
+              showDetailed={settings.showAlgorithmScores}
+            />
           </div>
           {/* Issues / Notepad tab bar */}
           <div className="flex-shrink-0 flex border-b border-border">
