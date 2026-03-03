@@ -309,12 +309,13 @@ export const DEFAULT_SETTINGS = {
   
   // ==================== ADVANCED ALGORITHM SETTINGS ====================
   // Based on DAFx-16, DBX, and KU Leuven research papers
+  // TUNED FOR FAST DETECTION (accepts more false positives for speed)
   algorithmMode: 'combined' as const, // MSD + Phase for best accuracy
-  msdMinFrames: 15, // Balanced between speed and accuracy
-  phaseCoherenceThreshold: 0.75, // Good balance for general use
+  msdMinFrames: 7, // FAST: Minimum frames for MSD (per DAFx-16 paper - 7 frames = 100% for speech)
+  phaseCoherenceThreshold: 0.65, // FAST: Lower threshold = faster detection, more false positives
   enableCompressionDetection: true, // Detect compressed content for adaptive thresholds
   enableCombPatternDetection: true, // Detect feedback patterns from DBX research
-  fusionFeedbackThreshold: 0.65, // Balanced threshold for positive detection
+  fusionFeedbackThreshold: 0.55, // FAST: Lower threshold = earlier detection
   showAlgorithmScores: false, // Hide advanced scores by default (for advanced users)
   showPhaseDisplay: false, // Hide phase visualization by default
 }

@@ -58,6 +58,20 @@ export interface CompressionResult {
   thresholdMultiplier: number
 }
 
+/** MINDS (MSD-Inspired Notch Depth Setting) result */
+export interface MINDSResult {
+  /** Suggested notch depth in dB (negative value) */
+  suggestedDepthDb: number
+  /** Whether the feedback is still growing */
+  isGrowing: boolean
+  /** Recent magnitude gradient (dB/frame) */
+  recentGradient: number
+  /** Confidence in the suggestion (0-1) */
+  confidence: number
+  /** Human-readable recommendation */
+  recommendation: string
+}
+
 /** Combined algorithm scores */
 export interface AlgorithmScores {
   msd: MSDResult | null

@@ -8,6 +8,7 @@ import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
 import { formatFrequency } from '@/lib/utils/pitchUtils'
 import { CANVAS_SETTINGS, VIZ_COLORS } from '@/lib/dsp/constants'
 import type { SpectrumData, Advisory } from '@/types/advisory'
+import type { EarlyWarning } from '@/hooks/useAudioAnalyzer'
 
 interface SpectrumCanvasProps {
   spectrum: SpectrumData | null
@@ -15,11 +16,13 @@ interface SpectrumCanvasProps {
   isRunning: boolean
   graphFontSize?: number
   onStart?: () => void
+  /** Early warning predictions for upcoming feedback frequencies */
+  earlyWarning?: EarlyWarning | null
 }
 
 const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 
-export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize = 11, onStart }: SpectrumCanvasProps) {
+export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize = 11, onStart, earlyWarning }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -183,6 +186,38 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
       ctx.stroke()
     }
 
+    // Draw early warning predictions (predicted feedback frequencies)
+    if (earlyWarning && earlyWarning.predictedFrequencies.length > 0) {
+      const warningColor = '#f59e0b' // amber-500 for early warnings
+      ctx.strokeStyle = warningColor
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([6, 4]) // Dashed line for predictions
+      ctx.globalAlpha = 0.6
+
+      for (const freq of earlyWarning.predictedFrequencies) {
+        if (freq < RTA_FREQ_MIN || freq > RTA_FREQ_MAX) continue
+        const x = freqToLogPosition(freq, RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
+
+        // Draw vertical dashed line
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, plotHeight)
+        ctx.stroke()
+
+        // Draw small warning triangle at top
+        ctx.fillStyle = warningColor
+        ctx.beginPath()
+        ctx.moveTo(x, 8)
+        ctx.lineTo(x - 5, 0)
+        ctx.lineTo(x + 5, 0)
+        ctx.closePath()
+        ctx.fill()
+      }
+
+      ctx.setLineDash([])
+      ctx.globalAlpha = 1
+    }
+
     // Draw peak markers for advisories
     for (const advisory of advisories) {
       const freq = advisory.trueFrequencyHz
@@ -248,7 +283,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
     ctx.textAlign = 'center'
     ctx.fillText('Hz', width / 2, height - 2)
 
-  }, [spectrum, advisories, graphFontSize])
+  }, [spectrum, advisories, graphFontSize, earlyWarning])
 
   useAnimationFrame(render, isRunning || spectrum !== null)
 

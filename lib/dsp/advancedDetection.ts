@@ -107,30 +107,32 @@ export interface FusedDetectionResult {
 // CONSTANTS (from research papers)
 // ============================================================================
 
-/** MSD thresholds from DAFx-16 paper */
+/** MSD thresholds from DAFx-16 paper - TUNED FOR FAST DETECTION */
 export const MSD_CONSTANTS = {
-  /** Threshold for MSD - values below this indicate feedback (dB²/frame²) */
-  THRESHOLD: 0.5,
-  /** Minimum frames needed for reliable speech detection */
-  MIN_FRAMES_SPEECH: 7,
+  /** Threshold for MSD - values below this indicate feedback (dB²/frame²) 
+   *  INCREASED from 0.5 to 0.8 for faster detection (accepts more false positives) */
+  THRESHOLD: 0.8,
+  /** Minimum frames needed for reliable speech detection (per paper: 7 = 100%) */
+  MIN_FRAMES_SPEECH: 5, // FAST: Reduced from 7 for quicker response
   /** Minimum frames needed for reliable music detection */
-  MIN_FRAMES_MUSIC: 13,
+  MIN_FRAMES_MUSIC: 10, // FAST: Reduced from 13
   /** Default number of frames for general use */
-  DEFAULT_FRAMES: 20,
+  DEFAULT_FRAMES: 7, // FAST: Reduced from 20
   /** Maximum frames to use (balance accuracy vs latency) */
-  MAX_FRAMES: 50,
+  MAX_FRAMES: 30, // FAST: Reduced from 50
 } as const
 
-/** Phase coherence thresholds */
+/** Phase coherence thresholds - TUNED FOR FAST DETECTION */
 export const PHASE_CONSTANTS = {
-  /** High coherence indicates feedback (pure tone maintains phase relationship) */
-  HIGH_COHERENCE: 0.85,
+  /** High coherence indicates feedback (pure tone maintains phase relationship)
+   *  REDUCED from 0.85 for faster detection (accepts more false positives) */
+  HIGH_COHERENCE: 0.70,
   /** Medium coherence is uncertain */
-  MEDIUM_COHERENCE: 0.65,
+  MEDIUM_COHERENCE: 0.50,
   /** Low coherence indicates random phase (music/noise) */
-  LOW_COHERENCE: 0.4,
-  /** Minimum samples for reliable phase analysis */
-  MIN_SAMPLES: 5,
+  LOW_COHERENCE: 0.3,
+  /** Minimum samples for reliable phase analysis - REDUCED for speed */
+  MIN_SAMPLES: 3,
 } as const
 
 /** Spectral flatness thresholds */
@@ -934,6 +936,141 @@ export function fuseAlgorithmResults(
 /**
  * Detect content type from signal characteristics
  */
+// ============================================================================
+// MINDS ALGORITHM (MSD-Inspired Notch Depth Setting)
+// From DAFx-16 paper: dynamically calculate minimum notch filter depth
+// ============================================================================
+
+export interface MINDSResult {
+  /** Suggested notch depth in dB (negative value) */
+  suggestedDepthDb: number
+  /** Whether the feedback is still growing */
+  isGrowing: boolean
+  /** Recent magnitude gradient (dB/frame) */
+  recentGradient: number
+  /** Confidence in the suggestion (0-1) */
+  confidence: number
+  /** Human-readable recommendation */
+  recommendation: string
+}
+
+/**
+ * MINDS: MSD-Inspired Notch Depth Setting
+ * 
+ * From DAFx-16 paper: "A suggested approach is to start with a shallow notch
+ * and then widen or deepen it if the magnitude gradient indicates continued growth."
+ * 
+ * Algorithm:
+ * 1. Monitor magnitude gradient over time
+ * 2. If both recent gradients are positive (growing), increase notch depth by 1dB
+ * 3. Stop when magnitude stops growing
+ * 
+ * @param magnitudeHistory - Recent magnitude values in dB (oldest to newest)
+ * @param currentDepthDb - Current applied notch depth (negative)
+ * @param framesPerSecond - Analysis frame rate for timing calculations
+ */
+export function calculateMINDS(
+  magnitudeHistory: number[],
+  currentDepthDb: number = 0,
+  framesPerSecond: number = 50
+): MINDSResult {
+  const minFrames = 3
+  
+  if (magnitudeHistory.length < minFrames) {
+    return {
+      suggestedDepthDb: -3, // Start with a light cut
+      isGrowing: false,
+      recentGradient: 0,
+      confidence: 0.3,
+      recommendation: 'Not enough data yet - try -3dB notch',
+    }
+  }
+
+  // Calculate recent gradients (first derivative)
+  const n = magnitudeHistory.length
+  const gradients: number[] = []
+  for (let i = 1; i < n; i++) {
+    gradients.push(magnitudeHistory[i] - magnitudeHistory[i - 1])
+  }
+
+  // Get last two gradients
+  const lastGradient = gradients[gradients.length - 1] || 0
+  const prevGradient = gradients[gradients.length - 2] || 0
+  
+  // Average recent gradient (last 3 frames)
+  const recentGradients = gradients.slice(-3)
+  const recentGradient = recentGradients.reduce((a, b) => a + b, 0) / recentGradients.length
+
+  // Check if feedback is still growing (both recent gradients positive)
+  const isGrowing = lastGradient > 0.1 && prevGradient > 0.1
+
+  // Calculate total growth
+  const totalGrowth = magnitudeHistory[n - 1] - magnitudeHistory[0]
+  
+  // Calculate growth rate in dB/second
+  const durationSec = magnitudeHistory.length / framesPerSecond
+  const growthRateDbPerSec = durationSec > 0 ? totalGrowth / durationSec : 0
+
+  // Determine suggested notch depth based on growth behavior
+  let suggestedDepthDb: number
+  let confidence: number
+  let recommendation: string
+
+  if (isGrowing) {
+    // Feedback is actively growing - need deeper cut
+    // Rule from paper: if magnitude keeps rising, increase notch by 1dB
+    const baseDepth = Math.abs(currentDepthDb) || 3
+    
+    if (growthRateDbPerSec > 6) {
+      // Runaway feedback - aggressive cut needed
+      suggestedDepthDb = -Math.min(baseDepth + 6, 18)
+      confidence = 0.9
+      recommendation = `URGENT: Runaway feedback (${growthRateDbPerSec.toFixed(1)} dB/s) - apply ${suggestedDepthDb}dB notch immediately`
+    } else if (growthRateDbPerSec > 3) {
+      // Fast growth
+      suggestedDepthDb = -Math.min(baseDepth + 3, 15)
+      confidence = 0.85
+      recommendation = `Growing feedback (${growthRateDbPerSec.toFixed(1)} dB/s) - suggest ${suggestedDepthDb}dB notch`
+    } else if (growthRateDbPerSec > 1) {
+      // Moderate growth
+      suggestedDepthDb = -Math.min(baseDepth + 2, 12)
+      confidence = 0.75
+      recommendation = `Slow growth detected - suggest ${suggestedDepthDb}dB notch`
+    } else {
+      // Very slow growth
+      suggestedDepthDb = -Math.min(baseDepth + 1, 9)
+      confidence = 0.6
+      recommendation = `Minor growth - try ${suggestedDepthDb}dB notch`
+    }
+  } else {
+    // Feedback is not growing (or magnitude is stable/decreasing)
+    if (totalGrowth > 6) {
+      // High level but stable - maintain current depth
+      suggestedDepthDb = currentDepthDb || -6
+      confidence = 0.7
+      recommendation = `Level stable at high gain - maintain ${suggestedDepthDb}dB notch`
+    } else if (totalGrowth > 3) {
+      // Moderate level
+      suggestedDepthDb = currentDepthDb || -4
+      confidence = 0.6
+      recommendation = `Moderate resonance - suggest ${suggestedDepthDb}dB notch`
+    } else {
+      // Low/decreasing level - can try lighter cut
+      suggestedDepthDb = -3
+      confidence = 0.5
+      recommendation = `Light resonance - try ${suggestedDepthDb}dB notch`
+    }
+  }
+
+  return {
+    suggestedDepthDb,
+    isGrowing,
+    recentGradient,
+    confidence,
+    recommendation,
+  }
+}
+
 export function detectContentType(
   spectrum: Float32Array,
   crestFactor: number,

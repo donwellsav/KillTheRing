@@ -86,6 +86,14 @@ export class FeedbackDetector {
   private activeBins: Uint32Array | null = null
   private activeBinPos: Int32Array | null = null
   private activeCount: number = 0
+  
+  // Time-domain buffer for proper phase extraction via manual FFT
+  private timeDomainData: Float32Array | null = null
+  // FFT computation buffers (real and imaginary parts)
+  private fftReal: Float32Array | null = null
+  private fftImag: Float32Array | null = null
+  // Extracted phase data (in radians)
+  private phaseData: Float32Array | null = null
 
   // A-weighting lookup
   private aWeightingTable: Float32Array | null = null
@@ -454,11 +462,19 @@ export class FeedbackDetector {
     this.noiseFloorDb = null
     this.recomputeDerivedIndices()
     
+    // ==================== Phase Extraction Buffers ====================
+    // Time-domain buffer for manual FFT (full FFT size, not just frequency bins)
+    const fftSize = this.config.fftSize
+    this.timeDomainData = new Float32Array(fftSize)
+    this.fftReal = new Float32Array(n)
+    this.fftImag = new Float32Array(n)
+    this.phaseData = new Float32Array(n)
+    
     // ==================== Advanced Detection Buffers ====================
     // MSD history buffer - stores dB magnitude for second derivative analysis
     this.msdBuffer = new MSDHistoryBuffer(n, this.msdMinFrames * 2)
     
-    // Phase history buffer - stores phase data for coherence analysis
+    // Phase history buffer - stores ACTUAL phase data (in radians) for coherence analysis
     this.phaseBuffer = new PhaseHistoryBuffer(n, 10)
     this.lastPhaseData = new Float32Array(n)
     
@@ -672,6 +688,10 @@ export class FeedbackDetector {
     if (this.msdBuffer) {
       this.msdBuffer.addFrame(freqDb)
     }
+    
+    // Extract proper phase data from time-domain signal using manual FFT
+    // This fixes the bug where we were storing magnitude as phase
+    this.extractPhaseData()
     
     // Update amplitude buffer for compression detection
     if (this.amplitudeBuffer) {
@@ -1112,6 +1132,115 @@ export class FeedbackDetector {
 
     // Spectral flatness
     return arithmeticMean > 0 ? geometricMean / arithmeticMean : 0.5
+  }
+
+  // ==================== Phase Extraction via Time-Domain FFT ====================
+
+  /**
+   * Extract phase data from time-domain signal using manual DFT
+   * This is necessary because Web Audio's AnalyserNode only provides magnitude data
+   * 
+   * Uses optimized radix-2 Cooley-Tukey FFT algorithm
+   * Returns phase in radians for each frequency bin
+   */
+  private extractPhaseData(): void {
+    const analyser = this.analyser
+    if (!analyser || !this.timeDomainData || !this.fftReal || !this.fftImag || !this.phaseData) return
+
+    // Get time-domain data
+    analyser.getFloatTimeDomainData(this.timeDomainData)
+
+    const n = this.config.fftSize
+    const numBins = n / 2
+
+    // Apply Hann window and prepare for FFT
+    const real = this.fftReal
+    const imag = this.fftImag
+    const timeDomain = this.timeDomainData
+
+    // Apply Hann window: w(n) = 0.5 * (1 - cos(2*pi*n/N))
+    for (let i = 0; i < n; i++) {
+      const window = 0.5 * (1 - Math.cos((2 * Math.PI * i) / n))
+      const idx = i < numBins ? i : 0
+      if (i < numBins) {
+        real[idx] = timeDomain[i] * window
+        imag[idx] = 0
+      }
+    }
+
+    // Compute FFT using radix-2 Cooley-Tukey (in-place)
+    this.computeFFT(real, imag, numBins)
+
+    // Extract phase: phase = atan2(imag, real)
+    const phase = this.phaseData
+    for (let i = 0; i < numBins; i++) {
+      phase[i] = Math.atan2(imag[i], real[i])
+    }
+
+    // Update phase history buffer with actual phase data
+    if (this.phaseBuffer) {
+      this.phaseBuffer.addFrame(phase)
+    }
+  }
+
+  /**
+   * In-place radix-2 Cooley-Tukey FFT
+   * Optimized for power-of-two sizes
+   */
+  private computeFFT(real: Float32Array, imag: Float32Array, n: number): void {
+    // Bit-reversal permutation
+    let j = 0
+    for (let i = 0; i < n - 1; i++) {
+      if (i < j) {
+        // Swap real[i] and real[j]
+        let temp = real[i]
+        real[i] = real[j]
+        real[j] = temp
+        // Swap imag[i] and imag[j]
+        temp = imag[i]
+        imag[i] = imag[j]
+        imag[j] = temp
+      }
+      let k = n >> 1
+      while (k <= j) {
+        j -= k
+        k >>= 1
+      }
+      j += k
+    }
+
+    // Cooley-Tukey iterative FFT
+    for (let len = 2; len <= n; len <<= 1) {
+      const halfLen = len >> 1
+      const angle = -2 * Math.PI / len
+      const wReal = Math.cos(angle)
+      const wImag = Math.sin(angle)
+
+      for (let i = 0; i < n; i += len) {
+        let curReal = 1
+        let curImag = 0
+
+        for (let k = 0; k < halfLen; k++) {
+          const evenIdx = i + k
+          const oddIdx = i + k + halfLen
+
+          // Butterfly operation
+          const tReal = curReal * real[oddIdx] - curImag * imag[oddIdx]
+          const tImag = curReal * imag[oddIdx] + curImag * real[oddIdx]
+
+          real[oddIdx] = real[evenIdx] - tReal
+          imag[oddIdx] = imag[evenIdx] - tImag
+          real[evenIdx] = real[evenIdx] + tReal
+          imag[evenIdx] = imag[evenIdx] + tImag
+
+          // Update twiddle factor
+          const nextReal = curReal * wReal - curImag * wImag
+          const nextImag = curReal * wImag + curImag * wReal
+          curReal = nextReal
+          curImag = nextImag
+        }
+      }
+    }
   }
 
   // ==================== Advanced Algorithm Configuration ====================
