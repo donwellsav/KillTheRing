@@ -1022,7 +1022,7 @@ export class FeedbackDetector {
     const avgGrowthRate = numFirstDeriv > 0 ? sumFirstDeriv / numFirstDeriv : 0
 
     // If not growing, not feedback
-    if (avgGrowthRate < MSD_SETTINGS.MIN_GROWTH_RATE) {
+    if (avgGrowthRate < this.growthRateThreshold) {
       this.msdConfirmFrames[binIndex] = 0
       return { msd: 999, growthRate: avgGrowthRate, isHowl: false, fastConfirm: false }
     }
