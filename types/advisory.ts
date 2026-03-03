@@ -221,6 +221,7 @@ export interface SpectrumData {
   contentType?: ContentType // Detected content type (speech, music, compressed, unknown)
   msdFrameCount?: number // Number of frames accumulated for MSD calculation
   isCompressed?: boolean // Whether compressed/limited audio is detected
+  compressionRatio?: number // Estimated compression ratio (1.0 = no compression, higher = more compressed)
 }
 
 export interface AnalyzerState {
