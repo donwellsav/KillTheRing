@@ -12,47 +12,49 @@ interface WaterfallCanvasProps {
   graphFontSize?: number
 }
 
-// Increased history for smoother scrolling and better resolution
-const HISTORY_SIZE = 256
+// History size for time scrolling
+const HISTORY_SIZE = 200
 
 export function WaterfallCanvas({ spectrum, isRunning, graphFontSize = 11 }: WaterfallCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const dimensionsRef = useRef({ width: 0, height: 0, dpr: 1 })
+  const dimensionsRef = useRef({ width: 0, height: 0 })
   const historyRef = useRef<Float32Array[]>([])
   const frameTimesRef = useRef<number[]>([])
   const lastSpectrumRef = useRef<number>(0)
-  // Pre-computed ImageData for efficient rendering
-  const imageDataRef = useRef<ImageData | null>(null)
 
+  // Handle resize - set canvas size to match container
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect
-        const dpr = window.devicePixelRatio || 1
-        dimensionsRef.current = { width, height, dpr }
+    const updateSize = () => {
+      const rect = container.getBoundingClientRect()
+      const width = Math.floor(rect.width)
+      const height = Math.floor(rect.height)
+      
+      if (width === 0 || height === 0) return
+      
+      dimensionsRef.current = { width, height }
 
-        const canvas = canvasRef.current
-        if (canvas) {
-          // Set canvas resolution to match display pixels for crisp rendering
-          canvas.width = Math.floor(width * dpr)
-          canvas.height = Math.floor(height * dpr)
-          canvas.style.width = `${width}px`
-          canvas.style.height = `${height}px`
-          // Reset ImageData cache on resize
-          imageDataRef.current = null
-        }
+      const canvas = canvasRef.current
+      if (canvas) {
+        // Set canvas to exact pixel dimensions (no DPR scaling - simpler and avoids zoom issues)
+        canvas.width = width
+        canvas.height = height
+        canvas.style.width = `${width}px`
+        canvas.style.height = `${height}px`
       }
-    })
+    }
 
+    const observer = new ResizeObserver(() => updateSize())
     observer.observe(container)
+    updateSize() // Initial size
+
     return () => observer.disconnect()
   }, [])
 
-  // Update history
+  // Update history with new spectrum data
   useEffect(() => {
     if (!spectrum?.freqDb || !isRunning) return
     if (spectrum.timestamp === lastSpectrumRef.current) return
@@ -76,188 +78,159 @@ export function WaterfallCanvas({ spectrum, isRunning, graphFontSize = 11 }: Wat
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
-    const { width, height, dpr } = dimensionsRef.current
+    const { width, height } = dimensionsRef.current
     if (width === 0 || height === 0) return
 
-    // Work in physical pixels for crisp rendering
-    const canvasWidth = Math.floor(width * dpr)
-    const canvasHeight = Math.floor(height * dpr)
+    // Padding in CSS pixels
+    const padding = { top: 8, right: 8, bottom: 18, left: 32 }
+    const plotWidth = width - padding.left - padding.right
+    const plotHeight = height - padding.top - padding.bottom
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    if (plotWidth <= 0 || plotHeight <= 0) return
 
-    // Padding in physical pixels
-    const padding = {
-      top: Math.floor(10 * dpr),
-      right: Math.floor(10 * dpr),
-      bottom: Math.floor(20 * dpr),
-      left: Math.floor(38 * dpr),
-    }
-    const plotWidth = canvasWidth - padding.left - padding.right
-    const plotHeight = canvasHeight - padding.top - padding.bottom
-
-    // Clear entire canvas
+    // Clear canvas
     ctx.fillStyle = '#0a0a0a'
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+    ctx.fillRect(0, 0, width, height)
 
     const history = historyRef.current
     const { RTA_DB_MIN, RTA_DB_MAX, RTA_FREQ_MIN, RTA_FREQ_MAX } = CANVAS_SETTINGS
     const currentSpectrum = spectrum
 
+    // Draw empty plot area if no data
     if (history.length === 0 || !currentSpectrum?.sampleRate || !currentSpectrum?.fftSize) {
-      // Draw placeholder state
-      ctx.fillStyle = '#1a1a1a'
+      ctx.fillStyle = '#111'
       ctx.fillRect(padding.left, padding.top, plotWidth, plotHeight)
+      drawAxes()
       return
     }
 
     const hzPerBin = currentSpectrum.sampleRate / currentSpectrum.fftSize
-    const n = history[0]?.length ?? 0
-
-    // Use full plot width for columns (1:1 pixel mapping for sharpness)
-    const numCols = plotWidth
+    const binCount = history[0]?.length ?? 0
     const numRows = history.length
 
-    // Create or reuse ImageData for efficient pixel manipulation
-    if (!imageDataRef.current || imageDataRef.current.width !== plotWidth || imageDataRef.current.height !== plotHeight) {
-      imageDataRef.current = ctx.createImageData(plotWidth, plotHeight)
-    }
-    const imageData = imageDataRef.current
-    const data = imageData.data
-
-    // Clear to background color
-    for (let i = 0; i < data.length; i += 4) {
-      data[i] = 10     // R
-      data[i + 1] = 10 // G
-      data[i + 2] = 10 // B
-      data[i + 3] = 255 // A
-    }
-
-    // Pre-compute frequency to bin mapping for each column
+    // Pre-compute log frequency mapping
     const logFreqMin = Math.log10(RTA_FREQ_MIN)
     const logFreqRange = Math.log10(RTA_FREQ_MAX) - logFreqMin
 
-    // Draw waterfall using ImageData for performance
+    // Draw waterfall row by row
     for (let row = 0; row < numRows; row++) {
       const spectrumRow = history[numRows - 1 - row] // Newest at top
       if (!spectrumRow) continue
 
-      // Scale row position to fit within plotHeight
-      const yStart = Math.floor((row / HISTORY_SIZE) * plotHeight)
-      const yEnd = Math.floor(((row + 1) / HISTORY_SIZE) * plotHeight)
-      const rowPixelHeight = Math.max(1, yEnd - yStart)
+      // Calculate Y position - distribute rows evenly across plot height
+      const y = padding.top + Math.floor((row / HISTORY_SIZE) * plotHeight)
+      const nextY = padding.top + Math.floor(((row + 1) / HISTORY_SIZE) * plotHeight)
+      const rowHeight = Math.max(1, nextY - y)
 
-      for (let col = 0; col < numCols; col++) {
-        // Map column to frequency (logarithmic)
-        const logPos = col / numCols
+      // Draw each frequency column
+      for (let x = 0; x < plotWidth; x++) {
+        // Map x position to frequency (logarithmic scale)
+        const logPos = x / plotWidth
         const freq = Math.pow(10, logFreqMin + logPos * logFreqRange)
         const bin = Math.round(freq / hzPerBin)
 
-        if (bin < 1 || bin >= n) continue
+        if (bin < 1 || bin >= binCount) continue
 
         const db = clamp(spectrumRow[bin], RTA_DB_MIN, RTA_DB_MAX)
         const normalized = (db - RTA_DB_MIN) / (RTA_DB_MAX - RTA_DB_MIN)
 
-        // Improved color mapping: deep blue -> cyan -> green -> yellow -> red
-        let r: number, g: number, b: number
-        if (normalized < 0.2) {
-          // Deep blue to blue
-          const t = normalized / 0.2
-          r = 0
-          g = Math.floor(t * 50)
-          b = Math.floor(80 + t * 100)
-        } else if (normalized < 0.4) {
-          // Blue to cyan
-          const t = (normalized - 0.2) / 0.2
-          r = 0
-          g = Math.floor(50 + t * 150)
-          b = Math.floor(180 - t * 30)
-        } else if (normalized < 0.6) {
-          // Cyan to green
-          const t = (normalized - 0.4) / 0.2
-          r = Math.floor(t * 80)
-          g = Math.floor(200 + t * 55)
-          b = Math.floor(150 - t * 150)
-        } else if (normalized < 0.8) {
-          // Green to yellow
-          const t = (normalized - 0.6) / 0.2
-          r = Math.floor(80 + t * 175)
-          g = 255
-          b = 0
-        } else {
-          // Yellow to red
-          const t = (normalized - 0.8) / 0.2
-          r = 255
-          g = Math.floor(255 - t * 255)
-          b = 0
-        }
-
-        // Fill all pixels in this cell
-        for (let py = 0; py < rowPixelHeight; py++) {
-          const pixelY = yStart + py
-          if (pixelY >= plotHeight) break
-          const idx = (pixelY * plotWidth + col) * 4
-          data[idx] = r
-          data[idx + 1] = g
-          data[idx + 2] = b
-          data[idx + 3] = 255
-        }
+        // Color mapping: black -> blue -> cyan -> green -> yellow -> red
+        ctx.fillStyle = getWaterfallColor(normalized)
+        ctx.fillRect(padding.left + x, y, 1, rowHeight)
       }
     }
 
-    // Draw the waterfall image
-    ctx.putImageData(imageData, padding.left, padding.top)
+    drawAxes()
 
-    // ── Axes (scaled by DPR) ──────────────────────────────────
-    const times = frameTimesRef.current
-    const numFrames = times.length
-    const nowMs = times[numFrames - 1] ?? Date.now()
-    const oldestMs = times[0] ?? nowMs
-    const totalMs = Math.max(1, nowMs - oldestMs)
-
-    ctx.fillStyle = '#666'
-    ctx.font = `${Math.floor(graphFontSize * dpr)}px system-ui, sans-serif`
-    ctx.textAlign = 'right'
-
-    // "Now" label at top
-    ctx.fillText('Now', padding.left - 4 * dpr, padding.top + 10 * dpr)
-
-    // Time tick intervals
-    const intervals = [1000, 2000, 5000, 10000, 30000]
-    const targetTicks = 4
-    let tickInterval = intervals[0]
-    for (const iv of intervals) {
-      if (totalMs / iv <= targetTicks) { tickInterval = iv; break }
-      tickInterval = iv
+    function getWaterfallColor(t: number): string {
+      // t is 0-1 normalized amplitude
+      if (t < 0.15) {
+        // Black to deep blue
+        const v = t / 0.15
+        return `rgb(0, 0, ${Math.floor(v * 100)})`
+      } else if (t < 0.3) {
+        // Deep blue to blue
+        const v = (t - 0.15) / 0.15
+        return `rgb(0, ${Math.floor(v * 60)}, ${Math.floor(100 + v * 80)})`
+      } else if (t < 0.45) {
+        // Blue to cyan
+        const v = (t - 0.3) / 0.15
+        return `rgb(0, ${Math.floor(60 + v * 140)}, ${Math.floor(180 - v * 20)})`
+      } else if (t < 0.6) {
+        // Cyan to green
+        const v = (t - 0.45) / 0.15
+        return `rgb(${Math.floor(v * 50)}, ${Math.floor(200 + v * 55)}, ${Math.floor(160 - v * 160)})`
+      } else if (t < 0.75) {
+        // Green to yellow
+        const v = (t - 0.6) / 0.15
+        return `rgb(${Math.floor(50 + v * 205)}, 255, 0)`
+      } else if (t < 0.9) {
+        // Yellow to orange
+        const v = (t - 0.75) / 0.15
+        return `rgb(255, ${Math.floor(255 - v * 128)}, 0)`
+      } else {
+        // Orange to red
+        const v = (t - 0.9) / 0.1
+        return `rgb(255, ${Math.floor(127 - v * 127)}, 0)`
+      }
     }
 
-    let tickMs = Math.floor(nowMs / tickInterval) * tickInterval
-    while (tickMs > oldestMs) {
-      const age = nowMs - tickMs
-      const rowFraction = numFrames > 1 ? age / totalMs : 0
-      const y = padding.top + rowFraction * plotHeight
+    function drawAxes() {
+      const times = frameTimesRef.current
+      const numFrames = times.length
+      const nowMs = times[numFrames - 1] ?? Date.now()
+      const oldestMs = times[0] ?? nowMs
+      const totalMs = Math.max(1, nowMs - oldestMs)
 
-      if (y >= padding.top && y <= padding.top + plotHeight) {
-        const ageS = Math.round(age / 1000)
-        ctx.fillText(`${ageS}s`, padding.left - 4 * dpr, y + 4 * dpr)
+      ctx.fillStyle = '#888'
+      ctx.font = `${graphFontSize}px system-ui, sans-serif`
 
-        ctx.strokeStyle = '#222'
-        ctx.lineWidth = dpr
-        ctx.beginPath()
-        ctx.moveTo(padding.left, y)
-        ctx.lineTo(padding.left + plotWidth, y)
-        ctx.stroke()
+      // Time axis (left side)
+      ctx.textAlign = 'right'
+      ctx.fillText('Now', padding.left - 4, padding.top + 10)
+
+      // Draw time ticks
+      const intervals = [1000, 2000, 5000, 10000, 30000]
+      let tickInterval = intervals[0]
+      for (const iv of intervals) {
+        if (totalMs / iv <= 4) { tickInterval = iv; break }
+        tickInterval = iv
       }
 
-      tickMs -= tickInterval
-    }
+      if (numFrames > 1) {
+        let tickMs = Math.floor(nowMs / tickInterval) * tickInterval
+        while (tickMs > oldestMs) {
+          const age = nowMs - tickMs
+          const yFrac = age / totalMs
+          const y = padding.top + yFrac * plotHeight
 
-    // Frequency axis (bottom)
-    ctx.textAlign = 'center'
-    const freqLabels = [100, 1000, 10000]
-    for (const freq of freqLabels) {
-      const x = padding.left + freqToLogPosition(freq, RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
-      const label = freq >= 1000 ? `${freq / 1000}k` : `${freq}`
-      ctx.fillText(label, x, canvasHeight - 4 * dpr)
+          if (y >= padding.top + 15 && y <= padding.top + plotHeight - 5) {
+            ctx.fillText(`${Math.round(age / 1000)}s`, padding.left - 4, y + 4)
+
+            ctx.strokeStyle = '#333'
+            ctx.lineWidth = 1
+            ctx.beginPath()
+            ctx.moveTo(padding.left, y)
+            ctx.lineTo(padding.left + plotWidth, y)
+            ctx.stroke()
+          }
+          tickMs -= tickInterval
+        }
+      }
+
+      // Frequency axis (bottom)
+      ctx.textAlign = 'center'
+      const freqLabels = [100, 1000, 10000]
+      for (const freq of freqLabels) {
+        const xPos = padding.left + freqToLogPosition(freq, RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
+        const label = freq >= 1000 ? `${freq / 1000}k` : `${freq}`
+        ctx.fillText(label, xPos, height - 4)
+      }
+
+      // Plot border
+      ctx.strokeStyle = '#333'
+      ctx.lineWidth = 1
+      ctx.strokeRect(padding.left, padding.top, plotWidth, plotHeight)
     }
 
   }, [spectrum, graphFontSize])
@@ -269,48 +242,37 @@ export function WaterfallCanvas({ spectrum, isRunning, graphFontSize = 11 }: Wat
   return (
     <div ref={containerRef} className="w-full h-full relative bg-[#0a0a0a]">
       {showPlaceholder ? (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-3">
           {/* Stylized waterfall preview */}
-          <div className="w-48 h-32 rounded-lg overflow-hidden relative">
+          <div className="w-40 h-24 rounded overflow-hidden relative border border-border/30">
             <div 
               className="absolute inset-0"
               style={{
                 background: `linear-gradient(to bottom, 
-                  #0a0a0a 0%, 
-                  #001428 15%, 
-                  #002850 30%, 
-                  #004080 45%, 
-                  #006060 55%, 
-                  #008040 65%, 
-                  #40a020 75%, 
-                  #80c000 85%, 
-                  #c0a000 92%, 
-                  #ff4000 100%
+                  #000 0%, 
+                  #001030 20%, 
+                  #003060 35%, 
+                  #006060 50%, 
+                  #008040 62%, 
+                  #60c000 74%, 
+                  #c0c000 85%, 
+                  #ff6000 95%, 
+                  #ff0000 100%
                 )`,
               }}
             />
-            {/* Simulated frequency lines */}
-            <div className="absolute inset-0 opacity-30">
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute h-full w-px bg-white/20"
-                  style={{ left: `${12 + i * 12}%` }}
-                />
-              ))}
-            </div>
           </div>
           <div className="text-center">
-            <p className="text-muted-foreground text-sm font-medium">Waterfall Spectrogram</p>
-            <p className="text-muted-foreground/60 text-xs mt-1">Press Start to begin analysis</p>
+            <p className="text-muted-foreground text-xs">Waterfall Spectrogram</p>
+            <p className="text-muted-foreground/50 text-[10px] mt-0.5">Press Start to begin</p>
           </div>
         </div>
       ) : (
         <canvas 
           ref={canvasRef} 
-          className="w-full h-full" 
+          className="absolute inset-0" 
           role="img" 
-          aria-label="Waterfall spectrogram showing frequency changes over time" 
+          aria-label="Waterfall spectrogram" 
         />
       )}
     </div>
