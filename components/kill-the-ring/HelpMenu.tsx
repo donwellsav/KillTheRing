@@ -44,7 +44,7 @@ export function HelpMenu() {
           <span className="hidden sm:inline text-xs">Help</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden" aria-describedby={undefined}>
+      <DialogContent className="max-w-4xl h-[90vh] p-0 gap-0 flex flex-col" aria-describedby={undefined}>
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border bg-card/50 flex-shrink-0">
           <DialogTitle className="text-xl flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -77,7 +77,7 @@ export function HelpMenu() {
           </div>
         </div>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-6">
 
             {/* ============================================================
