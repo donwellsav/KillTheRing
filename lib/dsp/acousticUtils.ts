@@ -607,7 +607,7 @@ export function applyFrequencyDependentThreshold(
   thresholdType: 'prominence' | 'sustain' | 'q'
 ): number {
   const band = getFrequencyBand(frequencyHz, schroederHz)
-  
+
   switch (thresholdType) {
     case 'prominence':
       return baseThreshold * band.prominenceMultiplier

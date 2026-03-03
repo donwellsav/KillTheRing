@@ -140,27 +140,28 @@ export const SEVERITY_THRESHOLDS = {
 } as const
 
 // Classification weights - optimized for PA feedback detection
+// Feature weights normalized to sum to 1.0 for proper probability distribution
 export const CLASSIFIER_WEIGHTS = {
-  // Stationarity (low pitch variation = feedback) - increased weight
-  STABILITY_FEEDBACK: 0.30,
+  // Stationarity (low pitch variation = feedback) - primary indicator
+  STABILITY_FEEDBACK: 0.28,
   STABILITY_THRESHOLD_CENTS: 12, // tighter threshold for feedback detection
-  
+
   // Harmonicity (coherent harmonics = instrument)
-  HARMONICITY_INSTRUMENT: 0.25,
+  HARMONICITY_INSTRUMENT: 0.22,
   HARMONICITY_THRESHOLD: 0.65, // higher threshold = less false instrument classification
-  
+
   // Modulation (vibrato = whistle)
-  MODULATION_WHISTLE: 0.20,
+  MODULATION_WHISTLE: 0.18,
   MODULATION_THRESHOLD: 0.45, // slightly higher threshold
-  
+
   // Sideband noise (breath = whistle)
-  SIDEBAND_WHISTLE: 0.10,
+  SIDEBAND_WHISTLE: 0.09,
   SIDEBAND_THRESHOLD: 0.35, // slightly higher threshold
-  
-  // Runaway growth (high velocity = feedback) - increased weight
-  GROWTH_FEEDBACK: 0.25,
+
+  // Runaway growth (high velocity = feedback) - strong indicator
+  GROWTH_FEEDBACK: 0.23,
   GROWTH_THRESHOLD: 4, // lower threshold = catch feedback growth earlier
-  
+
   // Classification thresholds - more conservative for PA use
   CLASSIFICATION_THRESHOLD: 0.45, // lower = more likely to flag as potential issue
   WHISTLE_THRESHOLD: 0.65, // higher = less false whistle classification
@@ -501,16 +502,18 @@ export const COMPRESSION_SETTINGS = {
   COMPRESSED_DYNAMIC_RANGE: 8,
 } as const
 
-// Algorithm fusion weights
+// Algorithm fusion weights - PHASE DISABLED (Web Audio API doesn't provide phase data)
+// Weights redistributed to MSD, spectral, comb, and existing algorithms
+// All weight sets sum to 1.0 for proper normalization
 export const FUSION_WEIGHTS = {
-  /** Default weights (balanced) */
-  DEFAULT: { msd: 0.35, phase: 0.30, spectral: 0.15, comb: 0.10, existing: 0.10 },
-  /** Speech-optimized (MSD is most reliable) */
-  SPEECH: { msd: 0.45, phase: 0.25, spectral: 0.15, comb: 0.05, existing: 0.10 },
-  /** Music-optimized (phase is more reliable) */
-  MUSIC: { msd: 0.20, phase: 0.40, spectral: 0.15, comb: 0.10, existing: 0.15 },
-  /** Compressed content (phase most important) */
-  COMPRESSED: { msd: 0.15, phase: 0.45, spectral: 0.20, comb: 0.10, existing: 0.10 },
+  /** Default weights - PHASE DISABLED */
+  DEFAULT: { msd: 0.50, phase: 0.00, spectral: 0.25, comb: 0.15, existing: 0.10 },
+  /** Speech-optimized (MSD is most reliable per DAFx-16) */
+  SPEECH: { msd: 0.55, phase: 0.00, spectral: 0.25, comb: 0.10, existing: 0.10 },
+  /** Music-optimized (spectral flatness + comb patterns more useful) */
+  MUSIC: { msd: 0.35, phase: 0.00, spectral: 0.30, comb: 0.20, existing: 0.15 },
+  /** Compressed content (MSD less reliable, lean on spectral + comb) */
+  COMPRESSED: { msd: 0.30, phase: 0.00, spectral: 0.35, comb: 0.20, existing: 0.15 },
 } as const
 
 // Algorithm mode options for UI

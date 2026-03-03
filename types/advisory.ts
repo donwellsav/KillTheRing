@@ -1,5 +1,11 @@
 // KillTheRing2 Types - Full type definitions for the feedback detection system
 
+// Re-export algorithm types defined in advancedDetection.ts so consumers
+// can import everything from '@/types/advisory'
+export type { AlgorithmScores, FusedDetectionResult, InterHarmonicResult, PTMRResult } from '@/lib/dsp/advancedDetection'
+export type AlgorithmMode = 'auto' | 'msd' | 'phase' | 'combined' | 'all'
+export type ContentType = 'speech' | 'music' | 'compressed' | 'unknown'
+
 export type ThresholdMode = 'absolute' | 'relative' | 'hybrid'
 export type AlgorithmMode = 'auto' | 'msd' | 'phase' | 'combined' | 'all'
 export type ContentType = 'speech' | 'music' | 'compressed' | 'unknown'
