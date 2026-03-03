@@ -417,7 +417,7 @@ export class PhaseHistoryBuffer {
 export function calculateSpectralFlatness(
   spectrum: Float32Array,
   peakBin: number,
-  bandwidth?: number
+  bandwidth = 10
 ): SpectralFlatnessResult {
   const startBin = Math.max(0, peakBin - bandwidth)
   const endBin   = Math.min(spectrum.length - 1, peakBin + bandwidth)
