@@ -10,7 +10,6 @@ import type {
   SpectrumData,
   TrackedPeak,
   DetectorSettings,
-  CombPatternResult,
 } from '@/types/advisory'
 import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
 

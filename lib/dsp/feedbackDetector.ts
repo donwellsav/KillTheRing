@@ -94,6 +94,8 @@ export class FeedbackDetector {
   private fftImag: Float32Array | null = null
   // Extracted phase data (in radians)
   private phaseData: Float32Array | null = null
+  // Last detected comb pattern (for deduplication of callbacks)
+  private lastCombPattern: CombPatternResult | null = null
 
   // A-weighting lookup
   private aWeightingTable: Float32Array | null = null
@@ -1089,12 +1091,18 @@ export class FeedbackDetector {
       )
       scores.comb = combResult
 
-      // Notify if pattern detected
-      if (combResult.hasPattern && this.callbacks.onCombPatternDetected) {
-        // Only notify if this is a new pattern or significantly different
-        if (!this.lastCombPattern || 
-            !this.lastCombPattern.hasPattern ||
-            Math.abs((this.lastCombPattern.fundamentalSpacing ?? 0) - (combResult.fundamentalSpacing ?? 0)) > 5) {
+      // Notify if pattern detected or cleared
+      if (this.callbacks.onCombPatternDetected) {
+        if (combResult.hasPattern) {
+          // Only notify if this is a new pattern or significantly different
+          if (!this.lastCombPattern || 
+              !this.lastCombPattern.hasPattern ||
+              Math.abs((this.lastCombPattern.fundamentalSpacing ?? 0) - (combResult.fundamentalSpacing ?? 0)) > 5) {
+            this.callbacks.onCombPatternDetected(combResult)
+            this.lastCombPattern = combResult
+          }
+        } else if (this.lastCombPattern?.hasPattern) {
+          // Pattern cleared - notify to remove early warning UI
           this.callbacks.onCombPatternDetected(combResult)
           this.lastCombPattern = combResult
         }
