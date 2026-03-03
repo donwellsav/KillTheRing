@@ -99,9 +99,6 @@ export class FeedbackDetector {
   private phaseData: Float32Array | null = null // extracted phase per bin (radians)
   private tdBufSwap: boolean = false            // ping-pong flag
 
-  // Last detected comb pattern (for deduplication of callbacks)
-  private lastCombPattern: CombPatternResult | null = null
-
   // A-weighting lookup
   private aWeightingTable: Float32Array | null = null
   private aWeightingMinDb: number = 0
@@ -511,6 +508,8 @@ export class FeedbackDetector {
     this.contentTypeConfidence = 0
     this.compressionResult = null
     this.lastCombPattern = null
+    this._hannCache = null   // force Hann window recompute on next start
+    this.tdBufSwap = false   // reset ping-pong state
   }
 
   private computeAWeightingTable(): void {
@@ -1155,40 +1154,33 @@ export class FeedbackDetector {
   // ==================== Phase Extraction: Dual-Snapshot Phase-Difference ====================
 
   /**
-   * Dual-snapshot phase-difference estimator.
+   * Dual-snapshot phase-difference estimator — targeted at active peak bins only.
    *
-   * Each call captures one time-domain frame via getFloatTimeDomainData().
-   * We maintain two ping-pong buffers (tdBufA / tdBufB).  Once we have two
-   * frames we compute — for each frequency bin k — the instantaneous phase
-   * using the cross-correlation of the two DFTs:
+   * Full-spectrum Goertzel (N_bins × N_samples) would be 33M iterations per
+   * frame at fftSize=8192 — far too expensive for main-thread real-time use.
    *
-   *   Δφ_k  =  atan2( Im(X_cur · conj(X_prev)),  Re(X_cur · conj(X_prev)) )
+   * Instead we compute Goertzel only for the bins that are currently "active"
+   * (i.e. bins already flagged by the magnitude-based peak detector).
+   * Typical active count: 1–8 peaks.  Cost: 8 × 8192 = ~65k iterations.
    *
-   * where X_k is estimated with a 3-sample Goertzel filter centred on bin k.
-   * Goertzel is O(N) per bin and shares the same Hann window the AnalyserNode
-   * uses, so there is no normalisation mismatch.
-   *
-   * For a pure sustained tone (feedback) the phase difference between
-   * successive frames is constant → coherence ≈ 1.
-   * For broadband/musical content it varies randomly → coherence ≈ 0.
+   * Phase coherence for the active bins feeds the PhaseHistoryBuffer and
+   * ultimately the fusion algorithm's phase score.
    */
   private extractPhaseData(): void {
     const analyser = this.analyser
     if (!analyser || !this.tdBufA || !this.tdBufB || !this.phaseData) return
 
-    const N  = this.config.fftSize
-    const sr = this.getSampleRate()
+    const N       = this.config.fftSize
     const numBins = N >> 1
 
-    // Ping-pong: write new frame into the buffer that is NOT the previous one
+    // Ping-pong snapshot
     const cur  = this.tdBufSwap ? this.tdBufA : this.tdBufB
     const prev = this.tdBufSwap ? this.tdBufB : this.tdBufA
     this.tdBufSwap = !this.tdBufSwap
 
     analyser.getFloatTimeDomainData(cur)
 
-    // Need at least 2 frames before we can compute phase diff
-    // On the very first call prev is all-zeros — skip it
+    // Skip first frame — prev is all-zeros
     let hasData = false
     for (let i = 0; i < 16; i++) {
       if (prev[i] !== 0) { hasData = true; break }
@@ -1197,57 +1189,77 @@ export class FeedbackDetector {
 
     const phase = this.phaseData
 
-    // Hann window coefficients (precomputed as scalar multiply)
-    // w(n) = 0.5 * (1 - cos(2π n / N))
-    // We evaluate each Goertzel for the centre frequency of bin k:
-    //   f_k = k * sr / N
-    //   ω_k = 2π f_k / sr = 2π k / N
-    for (let k = 1; k < numBins; k++) {
+    // Determine which bins to analyse: active peak bins ± 2 neighbours
+    // Fall back to a coarse 64-bin stride if no active bins yet (warm-up).
+    const binsToCheck: number[] = []
+    const active = this.active
+    const count  = this.activeCount
+
+    if (active && count > 0) {
+      for (let i = 0; i < count; i++) {
+        const bin = this.activeBins?.[i] ?? 0
+        if (bin <= 0 || bin >= numBins) continue
+        for (let d = -2; d <= 2; d++) {
+          const b = bin + d
+          if (b > 0 && b < numBins) binsToCheck.push(b)
+        }
+      }
+    } else {
+      // Warm-up: sparse stride to populate the history buffer
+      for (let b = 4; b < numBins; b += 64) binsToCheck.push(b)
+    }
+
+    // Precompute Hann window once (reuse across bins in this frame)
+    // Store in a temporary cache on `this` to avoid repeated allocation
+    if (!this._hannCache || this._hannCache.length !== N) {
+      this._hannCache = new Float32Array(N)
+      for (let n = 0; n < N; n++) {
+        this._hannCache[n] = 0.5 * (1 - Math.cos((2 * Math.PI * n) / N))
+      }
+    }
+    const hann = this._hannCache
+
+    for (const k of binsToCheck) {
       const omega = (2 * Math.PI * k) / N
-
-      // Single-pass Goertzel over the current and previous windowed frames
-      // Returns (real, imag) of the DFT bin
-      let s1Cur = 0, s2Cur = 0  // current frame
-      let s1Prv = 0, s2Prv = 0  // previous frame
-
       const coeff = 2 * Math.cos(omega)
 
+      let s1Cur = 0, s2Cur = 0
+      let s1Prv = 0, s2Prv = 0
+
       for (let n = 0; n < N; n++) {
-        // Hann window sample
-        const w = 0.5 * (1 - Math.cos((2 * Math.PI * n) / N))
+        const w  = hann[n]
         const xc = cur[n]  * w
         const xp = prev[n] * w
 
-        // Goertzel recurrence: s[n] = x[n] + coeff*s[n-1] - s[n-2]
-        const s0Cur = xc + coeff * s1Cur - s2Cur
-        s2Cur = s1Cur; s1Cur = s0Cur
+        const s0c = xc + coeff * s1Cur - s2Cur
+        s2Cur = s1Cur; s1Cur = s0c
 
-        const s0Prv = xp + coeff * s1Prv - s2Prv
-        s2Prv = s1Prv; s1Prv = s0Prv
+        const s0p = xp + coeff * s1Prv - s2Prv
+        s2Prv = s1Prv; s1Prv = s0p
       }
 
-      // Final Goertzel output: Y = s1 - s2 * e^{-jω}
       const sinO = Math.sin(omega)
       const cosO = Math.cos(omega)
+
       const reCur = s1Cur - s2Cur * cosO
       const imCur = s2Cur * sinO
       const rePrv = s1Prv - s2Prv * cosO
       const imPrv = s2Prv * sinO
 
-      // Cross-correlation X_cur · conj(X_prev)
+      // Cross-correlation X_cur · conj(X_prev) → instantaneous phase diff
       const crossRe = reCur * rePrv + imCur * imPrv
       const crossIm = imCur * rePrv - reCur * imPrv
-
-      // Phase difference (instantaneous frequency deviation)
       phase[k] = Math.atan2(crossIm, crossRe)
     }
-    phase[0] = 0 // DC — no meaningful phase
 
-    // Feed real phase data into the coherence history buffer
+    // Feed into coherence history (only written bins are meaningful)
     if (this.phaseBuffer) {
       this.phaseBuffer.addFrame(phase)
     }
   }
+
+  /** Hann window cache — allocated lazily and reused every frame */
+  private _hannCache: Float32Array | null = null
 
   // ==================== Advanced Algorithm Configuration ====================
 

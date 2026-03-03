@@ -1179,18 +1179,36 @@ export function detectContentType(
   crestFactor: number,
   spectralFlatness: number
 ): ContentType {
-  // Very low crest factor indicates heavy compression
+  // ---- Very low crest factor → heavy brick-wall compression ----
   if (crestFactor < COMPRESSION_CONSTANTS.COMPRESSED_CREST_FACTOR) {
     return 'compressed'
   }
 
-  // High spectral flatness indicates broadband content (likely music)
+  // ---- Pure tone detection (active feedback or strong sine wave) ----
+  // A sustained feedback tone has spectral flatness ≈ 0.01–0.04, meaning
+  // a single dominant bin and very low energy everywhere else.
+  // This is LOWER than speech (0.05–0.15) so the old code accidentally
+  // classified feedback as 'speech'.  We now explicitly detect it as
+  // 'unknown' (no extra compression penalty) so the MSD and phase
+  // coherence algorithms handle it cleanly.
+  if (spectralFlatness < 0.05) {
+    // Could be feedback, a sine-wave test tone, or a very pitched instrument.
+    // Return 'unknown' so the fusion engine weights all algorithms equally —
+    // do NOT call this 'speech' which would over-weight MSD alone.
+    return 'unknown'
+  }
+
+  // ---- High spectral flatness → broadband, music or noise ----
   if (spectralFlatness > 0.2) {
+    // Optionally use zero-crossing rate from spectrum energy spread to distinguish
+    // music from white noise, but 'music' weights are fine for both.
     return 'music'
   }
 
-  // Low spectral flatness with moderate crest factor indicates speech
-  if (spectralFlatness < 0.1 && crestFactor > 8) {
+  // ---- Mid flatness (0.05–0.2) with high crest factor → speech ----
+  // Speech has highly variable spectral shape (vowels/consonants) and
+  // high peak-to-RMS ratio due to transient consonant bursts.
+  if (crestFactor > 8) {
     return 'speech'
   }
 
