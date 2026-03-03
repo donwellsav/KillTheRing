@@ -9,8 +9,8 @@ import type {
   SpectrumData,
   TrackedPeak,
   DetectorSettings,
-  CombPatternResult,
 } from '@/types/advisory'
+import type { CombPatternResult } from '@/lib/dsp/advancedDetection'
 import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
 
 export interface AudioAnalyzerCallbacks {

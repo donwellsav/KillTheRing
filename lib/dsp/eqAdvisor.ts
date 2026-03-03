@@ -15,8 +15,8 @@ import type {
   ShelfRecommendation,
   EQAdvisory,
   PitchInfo,
-  MINDSResult,
 } from '@/types/advisory'
+import type { MINDSResult } from './advancedDetection'
 
 // Track input type that works with both Track and TrackedPeak
 type TrackInput = Track | TrackedPeak
