@@ -86,7 +86,14 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
     ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, width, height)
 
-    const padding = { top: 15, right: 10, bottom: 45, left: 30 }
+    const padding = {
+      top: Math.round(height * 0.04),
+      right: Math.round(width * 0.015),
+      bottom: Math.round(height * 0.11),
+      left: Math.round(width * 0.045),
+    }
+    const scaledFontSize = Math.max(8, Math.min(14, Math.round(width * 0.01)))
+    const fontSize = Math.round((graphFontSize + scaledFontSize) / 2)
     const plotWidth = width - padding.left - padding.right
     const plotHeight = height - padding.top - padding.bottom
 
@@ -147,13 +154,13 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
 
         // Cut value label
         ctx.fillStyle = recommendation.color
-        ctx.font = `bold ${graphFontSize}px system-ui, sans-serif`
+        ctx.font = `bold ${fontSize}px system-ui, sans-serif`
         ctx.textAlign = 'center'
-        ctx.fillText(`${cutDb}`, x + barWidth / 2, y + barHeight + 12)
+        ctx.fillText(`${cutDb}`, x + barWidth / 2, y + barHeight + fontSize + 1)
 
         // Frequency label for active issue
         ctx.fillStyle = recommendation.color
-        ctx.font = `${graphFontSize - 1}px system-ui, sans-serif`
+        ctx.font = `${fontSize - 1}px system-ui, sans-serif`
         ctx.textAlign = 'center'
         const freqLabel = recommendation.freq >= 1000 ? `${(recommendation.freq / 1000).toFixed(1)}k` : `${Math.round(recommendation.freq)}`
         ctx.fillText(freqLabel, x + barWidth / 2, y - 5)
@@ -161,7 +168,7 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
         // Cluster count badge (if > 1 peak merged)
         if (recommendation.clusterCount > 1) {
           const badgeText = `+${recommendation.clusterCount - 1}`
-          ctx.font = `bold ${graphFontSize - 3}px system-ui, sans-serif`
+          ctx.font = `bold ${fontSize - 3}px system-ui, sans-serif`
           ctx.fillStyle = '#38bdf8' // sky-400
           ctx.textAlign = 'left'
           ctx.fillText(badgeText, x + barWidth + 2, y + 10)
@@ -197,7 +204,7 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
     // Y-axis labels
     ctx.textAlign = 'right'
     ctx.fillStyle = '#555'
-    ctx.font = `${graphFontSize}px system-ui, sans-serif`
+    ctx.font = `${fontSize}px system-ui, sans-serif`
     ctx.fillText('0', padding.left - 5, padding.top + centerY + 3)
     ctx.fillText('-12', padding.left - 5, padding.top + centerY + (12 / 18) * (plotHeight / 2) + 3)
     ctx.fillText('+12', padding.left - 5, padding.top + centerY - (12 / 18) * (plotHeight / 2) + 3)

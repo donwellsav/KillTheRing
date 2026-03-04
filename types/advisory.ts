@@ -7,8 +7,8 @@ export type AlgorithmMode = 'auto' | 'msd' | 'phase' | 'combined' | 'all'
 export type ContentType = 'speech' | 'music' | 'compressed' | 'unknown'
 
 export type ThresholdMode = 'absolute' | 'relative' | 'hybrid'
-// Unified operation mode type - use 'vocalRing' everywhere (not 'vocalRingAssist')
-export type OperationMode = 'feedbackHunt' | 'vocalRing' | 'musicAware' | 'aggressive' | 'calibration'
+// Professional live sound operation modes — each configures detection for a specific scenario
+export type OperationMode = 'speech' | 'worship' | 'liveMusic' | 'theater' | 'monitors' | 'ringOut' | 'broadcast' | 'outdoor'
 export type Preset = 'surgical' | 'heavy'
 export type SeverityLevel = 'RUNAWAY' | 'GROWING' | 'RESONANCE' | 'POSSIBLE_RING' | 'WHISTLE' | 'INSTRUMENT'
 export type Severity = 'runaway' | 'growing' | 'resonance' | 'ring' | 'whistle' | 'instrument' | 'unknown'
@@ -324,7 +324,7 @@ export interface DetectorSettings {
   // Room acoustics for Schroeder frequency calculation
   roomRT60: number // Reverberation time in seconds (0.3-3.0, default 0.7)
   roomVolume: number // Room volume in m³ (50-5000, default 250)
-  roomPreset: 'small' | 'medium' | 'large' | 'custom' // Quick room size preset
+  roomPreset: 'small' | 'medium' | 'large' | 'arena' | 'worship' | 'custom' // Quick room size preset
   // Phase 1: Harmonic Series Filter (reduces bass guitar/instrument false positives)
   harmonicFilterEnabled: boolean // Enable harmonic series detection to filter instruments
   // Phase 4: Room Mode Calculator (identifies room resonances vs feedback)
@@ -372,7 +372,7 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   maxIssues: 12, // Show more issues for comprehensive tuning
   ignoreWhistle: true,
   preset: 'surgical',
-  mode: 'feedbackHunt', // Matches DEFAULT_SETTINGS.mode for consistency
+  mode: 'speech', // Matches DEFAULT_SETTINGS.mode for consistency
   aWeightingEnabled: false,
   noiseFloorEnabled: true,
   noiseFloorSampleCount: 160, // Faster noise floor sampling

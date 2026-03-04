@@ -87,8 +87,8 @@ export function HelpMenu() {
               <ul className="space-y-2">
                 <li><strong>Freq Range:</strong> Vocal (200-8kHz), Monitor (300-3kHz), Full (20-20kHz), Sub (20-250Hz).</li>
                 <li><strong>Music-Aware:</strong> Auto-switches sensitivity when the band starts/stops playing.</li>
-                <li><strong>Threshold:</strong> Primary sensitivity (4-8 dB aggressive, 10-14 balanced, 16+ conservative).</li>
-                <li><strong>Ring:</strong> Resonance detection (2-4 dB calibration, 5-7 normal, 8+ shows only).</li>
+                <li><strong>Threshold:</strong> Primary sensitivity (4-6 dB speech/monitors, 8-10 dB worship/outdoor, 12+ dB live music).</li>
+                <li><strong>Ring:</strong> Resonance detection (2-3 dB ring out/monitors, 4-5 dB normal, 6+ dB live music).</li>
                 <li><strong>Growth:</strong> Amplitude growth rate (0.5-1 dB/s early catch, 3+ dB/s runaway only).</li>
               </ul>
             </Section>
@@ -110,19 +110,28 @@ export function HelpMenu() {
             <Section title="Operation Modes">
               <ul className="space-y-3">
                 <li>
-                  <strong>Feedback Hunt (Default):</strong> Balanced PA mode. Threshold 8 dB, Ring 5 dB, Growth 2 dB/s.
+                  <strong>Speech (Default):</strong> Corporate conferences, lectures. Threshold 6 dB, Ring 3 dB, Growth 1.0 dB/s. A-weighted, 150–8000 Hz.
                 </li>
                 <li>
-                  <strong>Aggressive:</strong> Maximum sensitivity. Threshold 6 dB, Ring 3 dB, Growth 1 dB/s. Best for system calibration.
+                  <strong>Worship:</strong> Churches, reverberant spaces. Threshold 8 dB, Ring 5 dB, Growth 2.0 dB/s. Music-aware, 100–12000 Hz.
                 </li>
                 <li>
-                  <strong>Vocal Ring:</strong> Tuned for speech (200 Hz–8 kHz). Threshold 6 dB, Ring 4 dB, Growth 1.5 dB/s.
+                  <strong>Live Music:</strong> Concerts, clubs, festivals. Threshold 14 dB, Ring 8 dB, Growth 4.0 dB/s. Music-aware, 60–16000 Hz.
                 </li>
                 <li>
-                  <strong>Music-Aware:</strong> Reduced sensitivity for performance. Threshold 12 dB, Ring 7 dB, Growth 3 dB/s, music filter enabled.
+                  <strong>Theater:</strong> Drama, musicals, body mics. Threshold 7 dB, Ring 4 dB, Growth 1.5 dB/s. Auto music-aware, 150–10000 Hz.
                 </li>
                 <li>
-                  <strong>Calibration:</strong> Ultra-sensitive for initial setup. Threshold 4 dB, Ring 2 dB, Growth 0.5 dB/s.
+                  <strong>Monitors:</strong> Stage wedges, sidefills. Threshold 5 dB, Ring 3 dB, Growth 0.8 dB/s. Ultra-fast, 200–6000 Hz.
+                </li>
+                <li>
+                  <strong>Ring Out:</strong> System calibration, sound check. Threshold 4 dB, Ring 2 dB, Growth 0.5 dB/s. Max sensitivity, 60–16000 Hz.
+                </li>
+                <li>
+                  <strong>Broadcast:</strong> Studio, podcast, radio. Threshold 5 dB, Ring 3 dB, Growth 1.0 dB/s. A-weighted, 80–12000 Hz.
+                </li>
+                <li>
+                  <strong>Outdoor:</strong> Open air, festivals. Threshold 10 dB, Ring 6 dB, Growth 2.5 dB/s. Wind-resistant, 100–12000 Hz.
                 </li>
               </ul>
             </Section>

@@ -25,8 +25,31 @@ export function InputMeterSlider({
   const sliderRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const [editing, setEditing] = useState(false)
+  const dimensionsRef = useRef({ width: 0, height: 0 })
 
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
+
+  // ResizeObserver to track container size + DPR scaling
+  useEffect(() => {
+    const slider = sliderRef.current
+    if (!slider) return
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        dimensionsRef.current = { width, height }
+        const canvas = canvasRef.current
+        if (canvas) {
+          const dpr = window.devicePixelRatio || 1
+          canvas.width = Math.floor(width * dpr)
+          canvas.height = Math.floor(height * dpr)
+        }
+      }
+    })
+
+    observer.observe(slider)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -34,10 +57,14 @@ export function InputMeterSlider({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const w = canvas.width
-    const h = canvas.height
+    const dpr = window.devicePixelRatio || 1
+    const { width: w, height: h } = dimensionsRef.current
+    if (w === 0 || h === 0) return
 
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, w, h)
+
     ctx.fillStyle = 'rgba(255,255,255,0.08)'
     ctx.fillRect(0, 0, w, h)
 
@@ -144,8 +171,6 @@ export function InputMeterSlider({
         >
           <canvas
             ref={canvasRef}
-            width={512}
-            height={compact ? 16 : 20}
             className="w-full h-full"
           />
           {/* Gain thumb — white circle matching shadcn Slider thumb */}
@@ -158,7 +183,7 @@ export function InputMeterSlider({
         {/* 0dB unity label — positioned at the center (50%) of the range */}
         {!compact && (
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 pointer-events-none">
-            <span className="text-[8px] text-muted-foreground/60 font-mono leading-none">0</span>
+            <span className="text-[0.5rem] text-muted-foreground/60 font-mono leading-none">0</span>
           </div>
         )}
       </div>
@@ -169,7 +194,7 @@ export function InputMeterSlider({
           autoFocus
           type="text"
           defaultValue={String(value)}
-          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-[8px] w-9 h-4' : 'text-xs w-12 h-5'}`}
+          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-[0.5rem] w-9 h-4' : 'text-xs w-12 h-5'}`}
           onBlur={(e) => commitEdit(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') commitEdit((e.target as HTMLInputElement).value)
@@ -180,7 +205,7 @@ export function InputMeterSlider({
         />
       ) : (
         <button
-          className={`font-mono text-right text-foreground hover:text-primary transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[8px] w-9' : 'text-xs w-12'}`}
+          className={`font-mono text-right text-foreground hover:text-primary transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[0.5rem] w-9' : 'text-xs w-12'}`}
           onClick={() => setEditing(true)}
           onWheel={(e) => {
             e.preventDefault()

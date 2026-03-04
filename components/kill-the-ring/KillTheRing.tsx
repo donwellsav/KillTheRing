@@ -21,11 +21,12 @@ import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
 import { AlgorithmStatusBar } from './AlgorithmStatusBar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Menu, X, RotateCcw } from 'lucide-react'
+import { Menu, X, RotateCcw, LayoutGrid } from 'lucide-react'
 import Link from 'next/link'
 import type { Advisory, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 
 type GraphView = 'rta' | 'geq' | 'controls'
 
@@ -34,6 +35,28 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'geq', label: 'GEQ' },
   { value: 'controls', label: 'Controls' },
 ]
+
+const LAYOUT_PREFS_KEY = 'ktr-layout-prefs'
+
+function GraphChipRow({ value, onChange }: { value: GraphView; onChange: (v: GraphView) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      {GRAPH_CHIPS.map((chip) => (
+        <button
+          key={chip.value}
+          onClick={() => onChange(chip.value)}
+          className={`px-1.5 py-0.5 rounded text-[0.5rem] font-medium transition-colors ${
+            value === chip.value
+              ? 'bg-primary/20 text-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {chip.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export const KillTheRing = memo(function KillTheRingComponent() {
   // v3.0 Build Component
@@ -59,6 +82,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileShowGraph, setMobileShowGraph] = useState(false)
   const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad'>('issues')
+  const [layoutKey, setLayoutKey] = useState(0)
 
   // Applied cuts state (EQ Notepad)
   const [pinnedCuts, setPinnedCuts] = useState<PinnedCut[]>([])
@@ -190,14 +214,61 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   useAdvisoryLogging(advisories)
 
+  // Load saved graph assignments from localStorage
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAYOUT_PREFS_KEY) ?? '{}')
+      if (saved.activeGraph) setActiveGraph(saved.activeGraph)
+      if (saved.bottomLeftGraph) setBottomLeftGraph(saved.bottomLeftGraph)
+      if (saved.bottomRightGraph) setBottomRightGraph(saved.bottomRightGraph)
+    } catch {}
+  }, [])
+
+  // Persist graph assignments on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(LAYOUT_PREFS_KEY, JSON.stringify({
+        activeGraph, bottomLeftGraph, bottomRightGraph,
+      }))
+    } catch {}
+  }, [activeGraph, bottomLeftGraph, bottomRightGraph])
+
+  const resetLayout = useCallback(() => {
+    try {
+      localStorage.removeItem('react-resizable-panels:ktr-layout-main')
+      localStorage.removeItem('react-resizable-panels:ktr-layout-vertical')
+      localStorage.removeItem('react-resizable-panels:ktr-layout-bottom')
+      localStorage.removeItem(LAYOUT_PREFS_KEY)
+    } catch {}
+    setActiveGraph('rta')
+    setBottomLeftGraph('geq')
+    setBottomRightGraph('controls')
+    setLayoutKey(k => k + 1)
+  }, [])
+
   const handleModeChange = (mode: OperationMode) => {
-    const modeSettings = OPERATION_MODES[mode]
+    const preset = OPERATION_MODES[mode]
+    if (!preset) return
     updateSettings({
       mode,
-      feedbackThresholdDb: modeSettings.feedbackThreshold,
-      ringThresholdDb: modeSettings.ringThreshold,
-      growthRateThreshold: modeSettings.growthRateThreshold,
-      musicAware: modeSettings.musicAware,
+      feedbackThresholdDb: preset.feedbackThresholdDb,
+      ringThresholdDb: preset.ringThresholdDb,
+      growthRateThreshold: preset.growthRateThreshold,
+      musicAware: preset.musicAware,
+      autoMusicAware: preset.autoMusicAware,
+      fftSize: preset.fftSize,
+      minFrequency: preset.minFrequency,
+      maxFrequency: preset.maxFrequency,
+      sustainMs: preset.sustainMs,
+      clearMs: preset.clearMs,
+      holdTimeMs: preset.holdTimeMs,
+      confidenceThreshold: preset.confidenceThreshold,
+      prominenceDb: preset.prominenceDb,
+      relativeThresholdDb: preset.relativeThresholdDb,
+      eqPreset: preset.eqPreset,
+      aWeightingEnabled: preset.aWeightingEnabled,
+      inputGainDb: preset.inputGainDb,
+      ignoreWhistle: preset.ignoreWhistle,
     })
     logger.logSettingsChanged({ mode, reason: 'mode_changed' })
   }
@@ -256,7 +327,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
                 <span className="text-xl font-black tracking-tight text-primary">RING</span>
               </div>
-              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+              <span className="text-[0.625rem] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
                 Don Wells AV
               </span>
             </div>
@@ -269,7 +340,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
                 <span className="text-xl font-black tracking-tight text-primary">RING</span>
               </div>
-              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+              <span className="text-[0.625rem] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
                 Don Wells AV
               </span>
             </div>
@@ -292,16 +363,36 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         {/* ── DESKTOP: Action icons (right side) ──────────────────── */}
         <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-0 pb-1 sm:pb-0 text-xs text-muted-foreground sm:flex-shrink-0">
           {noiseFloorDb !== null && (
-            <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto sm:mr-0">
+            <span className="font-mono text-[0.5625rem] sm:text-[0.625rem] hidden landscape:inline mr-auto sm:mr-0">
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
+
+          <TooltipProvider delayDuration={400}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetLayout}
+                  className="hidden landscape:flex h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                  aria-label="Reset layout"
+                >
+                  <LayoutGrid className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                Reset layout
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <FeedbackHistoryPanel />
           <HelpMenu />
           <SettingsPanel
             settings={settings}
             onSettingsChange={handleSettingsChange}
+            onModeChange={handleModeChange}
             onReset={() => {
               resetSettings()
               logger.logSettingsChanged({ action: 'reset_to_defaults' })
@@ -401,7 +492,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             <section>
-              <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
+              <h3 className="text-[0.625rem] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
               <InputMeterSlider
                 value={settings.inputGainDb}
                 onChange={(v) => handleSettingsChange({ inputGainDb: v })}
@@ -411,7 +502,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </section>
             <div className="border-t border-border" />
             <section>
-              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+              <h2 className="text-[0.625rem] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
                 <span className="text-primary font-mono">{advisories.length}</span>
               </h2>
@@ -473,7 +564,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               />
             </div>
             <div className="flex-1 overflow-y-auto p-3">
-              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+              <h2 className="text-[0.625rem] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
                 <span className="text-primary font-mono">{advisories.length}</span>
               </h2>
@@ -489,82 +580,165 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
         )}
 
-        {/* Desktop: Always-visible left sidebar */}
-        <aside className="hidden landscape:flex w-56 xl:w-64 2xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
-          {/* Algorithm status — always visible in sidebar */}
-          <div className="flex-shrink-0 border-b border-border p-2">
-            <AlgorithmStatusBar
-              algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
-              contentType={spectrum?.contentType}
-              msdFrameCount={spectrum?.msdFrameCount}
-              isCompressed={spectrum?.isCompressed}
-              compressionRatio={spectrum?.compressionRatio}
-              isRunning={isRunning}
-              showDetailed={settings.showAlgorithmScores}
-            />
-          </div>
-          {/* Issues / Notepad tab bar */}
-          <div className="flex-shrink-0 flex border-b border-border">
-            <button
-              onClick={() => setActiveSidebarTab('issues')}
-              className={`flex-1 py-1.5 text-[10px] font-medium uppercase tracking-wide transition-colors ${
-                activeSidebarTab === 'issues'
-                  ? 'text-foreground border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Issues
-              {advisories.length > 0 && (
-                <span className="ml-1 font-mono text-primary">{advisories.length}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveSidebarTab('notepad')}
-              className={`flex-1 py-1.5 text-[10px] font-medium uppercase tracking-wide transition-colors ${
-                activeSidebarTab === 'notepad'
-                  ? 'text-foreground border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              EQ Notepad
-              {pinnedCuts.length > 0 && (
-                <span className="ml-1 font-mono text-primary">{pinnedCuts.length}</span>
-              )}
-            </button>
-          </div>
-          <div className="flex-1 min-h-0 overflow-y-auto p-3">
-            {activeSidebarTab === 'issues' ? (
-              <IssuesList
-                advisories={advisories}
-                maxIssues={settings.maxDisplayedIssues}
-                appliedIds={appliedIdsRef.current}
-                dismissedIds={dismissedIds}
-                onApply={handleApply}
-                onDismiss={handleDismiss}
-              />
-            ) : (
-              <EQNotepad
-                pins={pinnedCuts}
-                onRemove={handleRemovePin}
-                onClear={handleClearPins}
-              />
-            )}
-          </div>
-        </aside>
-
-        {/* Graph area — full width on mobile (when mobileShowGraph), right panel on desktop */}
-        <main className={`flex-1 flex flex-col overflow-hidden min-w-0 ${mobileShowGraph ? 'flex' : 'hidden landscape:flex'}`}>
-
-          {/* Top: Large active graph (~60% height) */}
-          <div className="flex-[3] min-h-0 p-1.5 sm:p-2 md:p-3 pb-0.5 sm:pb-1">
-            <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col">
-              <div className="flex-shrink-0 flex items-center justify-end px-2 py-1 border-b border-border bg-muted/20">
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">
-                  {isRunning && spectrum?.noiseFloorDb != null
-                    ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
-                    : 'Ready'}
-                </span>
+        {/* ── Desktop: Resizable panel layout (landscape only) ─── */}
+        <div className="hidden landscape:flex flex-1 overflow-hidden">
+          <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main">
+            {/* Sidebar panel */}
+            <ResizablePanel defaultSize={15} minSize={8} maxSize={30} collapsible>
+              <div className="flex flex-col h-full bg-card/50 overflow-hidden">
+                {/* Algorithm status */}
+                <div className="flex-shrink-0 border-b border-border p-2">
+                  <AlgorithmStatusBar
+                    algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
+                    contentType={spectrum?.contentType}
+                    msdFrameCount={spectrum?.msdFrameCount}
+                    isCompressed={spectrum?.isCompressed}
+                    compressionRatio={spectrum?.compressionRatio}
+                    isRunning={isRunning}
+                    showDetailed={settings.showAlgorithmScores}
+                  />
+                </div>
+                {/* Issues / Notepad tab bar */}
+                <div className="flex-shrink-0 flex border-b border-border">
+                  <button
+                    onClick={() => setActiveSidebarTab('issues')}
+                    className={`flex-1 py-1.5 text-[0.625rem] font-medium uppercase tracking-wide transition-colors ${
+                      activeSidebarTab === 'issues'
+                        ? 'text-foreground border-b-2 border-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Issues
+                    {advisories.length > 0 && (
+                      <span className="ml-1 font-mono text-primary">{advisories.length}</span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveSidebarTab('notepad')}
+                    className={`flex-1 py-1.5 text-[0.625rem] font-medium uppercase tracking-wide transition-colors ${
+                      activeSidebarTab === 'notepad'
+                        ? 'text-foreground border-b-2 border-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    EQ Notepad
+                    {pinnedCuts.length > 0 && (
+                      <span className="ml-1 font-mono text-primary">{pinnedCuts.length}</span>
+                    )}
+                  </button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto p-3">
+                  {activeSidebarTab === 'issues' ? (
+                    <IssuesList
+                      advisories={advisories}
+                      maxIssues={settings.maxDisplayedIssues}
+                      appliedIds={appliedIdsRef.current}
+                      dismissedIds={dismissedIds}
+                      onApply={handleApply}
+                      onDismiss={handleDismiss}
+                    />
+                  ) : (
+                    <EQNotepad
+                      pins={pinnedCuts}
+                      onRemove={handleRemovePin}
+                      onClear={handleClearPins}
+                    />
+                  )}
+                </div>
               </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Graph area panel */}
+            <ResizablePanel defaultSize={85}>
+              <ResizablePanelGroup direction="vertical" autoSaveId="ktr-layout-vertical">
+                {/* Top graph */}
+                <ResizablePanel defaultSize={60} minSize={20} collapsible>
+                  <div className="h-full p-1.5 pb-0.5">
+                    <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col">
+                      <div className="flex-shrink-0 flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                        <GraphChipRow value={activeGraph} onChange={setActiveGraph} />
+                        <span className="text-[0.625rem] text-muted-foreground font-mono whitespace-nowrap">
+                          {isRunning && spectrum?.noiseFloorDb != null
+                            ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
+                            : 'Ready'}
+                        </span>
+                      </div>
+                      <div className="relative flex-1 min-h-0">
+                        <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                          <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} onStart={!isRunning ? start : undefined} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} />
+                        </div>
+                        <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                          <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />
+                        </div>
+                        <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'controls' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                          <div className="h-full p-4 overflow-y-auto">
+                            <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+
+                {/* Bottom row */}
+                <ResizablePanel defaultSize={40} minSize={15} collapsible>
+                  <ResizablePanelGroup direction="horizontal" autoSaveId="ktr-layout-bottom">
+                    {/* Bottom-Left */}
+                    <ResizablePanel defaultSize={50} minSize={20} collapsible>
+                      <div className="h-full p-1.5 pt-0.5">
+                        <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+                          <div className="flex-shrink-0 flex items-center px-2 py-0.5 border-b border-border bg-muted/20">
+                            <GraphChipRow value={bottomLeftGraph} onChange={setBottomLeftGraph} />
+                          </div>
+                          <div className="flex-1 min-h-0 pointer-events-none">
+                            {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} />}
+                            {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                            {bottomLeftGraph === 'controls' && (
+                              <div className="h-full p-3 overflow-y-auto pointer-events-auto">
+                                <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </ResizablePanel>
+
+                    <ResizableHandle withHandle />
+
+                    {/* Bottom-Right */}
+                    <ResizablePanel defaultSize={50} minSize={20} collapsible>
+                      <div className="h-full p-1.5 pt-0.5">
+                        <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+                          <div className="flex-shrink-0 flex items-center px-2 py-0.5 border-b border-border bg-muted/20">
+                            <GraphChipRow value={bottomRightGraph} onChange={setBottomRightGraph} />
+                          </div>
+                          <div className="flex-1 min-h-0 pointer-events-none">
+                            {bottomRightGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} />}
+                            {bottomRightGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                            {bottomRightGraph === 'controls' && (
+                              <div className="h-full p-3 overflow-y-auto pointer-events-auto">
+                                <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
+
+        {/* ── Mobile: Graph view (portrait only) ─────────────────── */}
+        <main className={`flex-1 flex flex-col overflow-hidden min-w-0 landscape:hidden ${mobileShowGraph ? 'flex' : 'hidden'}`}>
+          <div className="flex-1 min-h-0 p-1.5 pb-0.5">
+            <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col">
               <div className="relative flex-1 min-h-0">
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                   <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} onStart={!isRunning ? start : undefined} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} />
@@ -582,12 +756,12 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
 
           {/* Mobile graph pill switcher */}
-          <div className="flex landscape:hidden items-center gap-2 px-2 pb-1.5 pt-0.5 flex-shrink-0">
+          <div className="flex items-center gap-2 px-2 pb-1.5 pt-0.5 flex-shrink-0">
             {GRAPH_CHIPS.map((chip) => (
               <button
                 key={chip.value}
                 onClick={() => setActiveGraph(chip.value)}
-                className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
+                className={`flex-1 py-1.5 rounded-full text-[0.625rem] font-medium border transition-colors ${
                   activeGraph === chip.value
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
@@ -597,35 +771,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               </button>
             ))}
           </div>
-
-          {/* Bottom row: Two configurable graphs (~40% height), tablet and up */}
-          <div className="hidden landscape:flex flex-[2] min-h-0 gap-1.5 landscape:gap-2 p-1.5 landscape:p-3 pt-0.5 landscape:pt-1">
-            {/* Bottom-Left Graph */}
-            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-              <div className="flex-1 min-h-0 pointer-events-none">
-                {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} />}
-                {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomLeftGraph === 'controls' && (
-                  <div className="h-full p-3 overflow-y-auto pointer-events-auto">
-                    <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Bottom-Right Graph */}
-            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-              <div className="flex-1 min-h-0 pointer-events-none">
-                {bottomRightGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} />}
-                {bottomRightGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomRightGraph === 'controls' && (
-                  <div className="h-full p-3 overflow-y-auto pointer-events-auto">
-                    <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
         </main>
       </div>
     </div>

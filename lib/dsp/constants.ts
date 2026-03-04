@@ -235,147 +235,410 @@ export const CANVAS_SETTINGS = {
   GEQ_BAR_WIDTH_RATIO: 0.8, // Bar width as ratio of band spacing
 } as const
 
-// Operation mode presets - optimized for PA system feedback detection
-// Default is Aggressive for corporate/conference environments with vocal focus
-export const OPERATION_MODES = {
-  feedbackHunt: {
-    // Balanced PA mode - good sensitivity without excessive false positives
-    feedbackThreshold: 8, // Moderate threshold for balanced detection
-    ringThreshold: 5, // Catch resonances before they become problematic
-    growthRateThreshold: 2, // Responsive to growing feedback
+// ============================================================================
+// OPERATION MODE PRESETS — Professional Live Sound Scenarios
+// Research-informed: DBX AFS whitepaper, Smaart v8 measurement guide,
+// Master Handbook of Acoustics (Everest), Sound Insulation (Hopkins)
+// ============================================================================
+
+export interface ModePreset {
+  label: string
+  description: string
+  // Detection thresholds
+  feedbackThresholdDb: number
+  ringThresholdDb: number
+  growthRateThreshold: number
+  // Content awareness
+  musicAware: boolean
+  autoMusicAware: boolean
+  // Analysis parameters
+  fftSize: 4096 | 8192 | 16384
+  minFrequency: number
+  maxFrequency: number
+  // Timing
+  sustainMs: number
+  clearMs: number
+  holdTimeMs: number
+  // Sensitivity
+  confidenceThreshold: number
+  prominenceDb: number
+  relativeThresholdDb: number
+  // Display/EQ
+  eqPreset: 'surgical' | 'heavy'
+  aWeightingEnabled: boolean
+  inputGainDb: number
+  ignoreWhistle: boolean
+}
+
+export const OPERATION_MODES: Record<string, ModePreset> = {
+  // ── SPEECH / CONFERENCE (DEFAULT) ────────────────────────────────────────
+  // Corporate presentations, conferences, lectures, panel discussions, town halls
+  // Environment: Treated ballrooms, exhibit halls, conference rooms (50–2000 m³)
+  // RT60 0.5–1.5 s. Speech only — no music content.
+  // Priority: Maximum sensitivity, early detection, preserve speech clarity.
+  // Ref: Speech range 170–4000 Hz (Everest), extend to 8 kHz for sibilance.
+  //      A-weighting appropriate for speech SPL (~65–85 dBA).
+  //      Consonant transients 5–15 ms — sustainMs must exceed this.
+  speech: {
+    label: 'Speech',
+    description: 'Corporate & Conference',
+    feedbackThresholdDb: 6,
+    ringThresholdDb: 3,
+    growthRateThreshold: 1.0,
     musicAware: false,
+    autoMusicAware: false,
+    fftSize: 8192,           // 5.9 Hz resolution, 170 ms time constant at 48 kHz
+    minFrequency: 150,       // Extended for chest-resonance body mics
+    maxFrequency: 8000,      // Speech sibilance upper bound
+    sustainMs: 200,          // Fast confirmation — well above consonant transients
+    clearMs: 350,            // Quick clearing for responsive display
+    holdTimeMs: 3000,        // Long hold for EQ reference during adjustments
+    confidenceThreshold: 0.35, // Very aggressive — surface everything
+    prominenceDb: 10,        // Low prominence catches subtle peaks
+    relativeThresholdDb: 16, // Sensitive relative threshold
+    eqPreset: 'surgical',   // Narrow cuts preserve speech clarity
+    aWeightingEnabled: true, // Prioritizes 2–5 kHz speech intelligibility band
+    inputGainDb: 15,
+    ignoreWhistle: true,
   },
-  vocalRing: {
-    // Optimized for vocal frequencies (200Hz-8kHz)
-    feedbackThreshold: 6, // More sensitive for speech feedback
-    ringThreshold: 4, // Catch vocal ring-outs
-    growthRateThreshold: 1.5, // Fast response for speech dynamics
-    musicAware: false,
-  },
-  musicAware: {
-    // Use during live performance to reduce false positives
-    feedbackThreshold: 12, // Higher threshold to ignore musical content
-    ringThreshold: 7, // Less sensitive during music
-    growthRateThreshold: 3, // Only catch severe feedback
+
+  // ── WORSHIP / HOUSE OF WORSHIP ───────────────────────────────────────────
+  // Churches, synagogues, mosques, temples, cathedrals
+  // Environment: Highly reverberant (1.0–3.0 s RT60), large volumes (500–5000 m³),
+  //   stone/glass/hard surfaces, often with balconies.
+  // Content: Mix of speech (sermon) and music (choir, organ, worship band, piano).
+  // Priority: Handle reverberant space, music discrimination, protect speech moments.
+  // Ref: Church RT60 1.5–4.0 s (Everest Fig 7-13). Schroeder freq for 1000 m³ / 2.0 s ≈ 89 Hz.
+  //      Organ extends to 16 Hz fundamental; worship band to 12 kHz+.
+  worship: {
+    label: 'Worship',
+    description: 'House of Worship',
+    feedbackThresholdDb: 8,
+    ringThresholdDb: 5,
+    growthRateThreshold: 2.0,
     musicAware: true,
+    autoMusicAware: true,    // Auto-switch when worship band starts/stops
+    fftSize: 8192,
+    minFrequency: 100,       // Organ and piano extend low
+    maxFrequency: 12000,     // Cymbals and choir harmonics
+    sustainMs: 350,          // Longer sustain for reverberant decay patterns
+    clearMs: 500,            // Slower clearing in reverberant environment
+    holdTimeMs: 4000,        // Long hold in reverberant space
+    confidenceThreshold: 0.50, // Balance sensitivity with reverb-induced false positives
+    prominenceDb: 14,        // Higher prominence to cut through reverberant energy
+    relativeThresholdDb: 20, // Higher relative threshold for reverberant noise floor
+    eqPreset: 'surgical',   // Narrow cuts avoid coloring worship music
+    aWeightingEnabled: false, // Full spectrum important for organ/choir
+    inputGainDb: 10,
+    ignoreWhistle: true,
   },
-  aggressive: {
-    // DEFAULT - Maximum sensitivity for corporate/conference PA
-    // Catches feedback early before it becomes audible to audience
-    feedbackThreshold: 6, // Very sensitive detection
-    ringThreshold: 3, // Catch subtle resonances
-    growthRateThreshold: 1, // Immediate response to any growth
-    musicAware: false,
+
+  // ── LIVE MUSIC ───────────────────────────────────────────────────────────
+  // Concerts, club gigs, festivals, arena shows, battle of the bands
+  // Environment: Variable (small clubs to arenas), 0.5–2.0 s RT60, high SPL (95–120 dBA).
+  // Content: Music dominant — high broadband energy, transient-rich program material.
+  // Priority: Avoid false positives from instruments, only catch genuine runaway feedback.
+  // Ref: DBX whitepaper — music-aware mode critical for live performance.
+  //      At high SPL, ear response flattens (equal-loudness contours) — use flat weighting.
+  //      Smaart recommends spectrograph (not RTA) for feedback ID during music.
+  liveMusic: {
+    label: 'Live Music',
+    description: 'Concerts & Events',
+    feedbackThresholdDb: 14,
+    ringThresholdDb: 8,
+    growthRateThreshold: 4.0,
+    musicAware: true,
+    autoMusicAware: false,   // Always music-aware in this mode
+    fftSize: 4096,           // Fast 85 ms time response for dynamic transients
+    minFrequency: 60,        // Full range for bass/sub instruments
+    maxFrequency: 16000,     // Full range for cymbals, brass harmonics
+    sustainMs: 400,          // Long sustain avoids musical transient false positives
+    clearMs: 600,            // Slow clearing for sustained musical content
+    holdTimeMs: 2000,        // Short hold — engineer is actively mixing
+    confidenceThreshold: 0.60, // High confidence to avoid false alarms in dense mix
+    prominenceDb: 16,        // High prominence to cut through musical energy
+    relativeThresholdDb: 24, // Very high — only extreme peaks relative to noise
+    eqPreset: 'heavy',      // Wider cuts for emergency feedback killing
+    aWeightingEnabled: false, // Flat weighting at high SPL
+    inputGainDb: 0,          // Hot line-level signal from console
+    ignoreWhistle: false,    // Whistling instruments exist in music
   },
-  calibration: {
-    // Ultra-sensitive for initial system setup and ring-out
-    feedbackThreshold: 4, // Maximum sensitivity
-    ringThreshold: 2, // Catch everything
-    growthRateThreshold: 0.5, // Fastest possible response
+
+  // ── THEATER / DRAMA ──────────────────────────────────────────────────────
+  // Broadway, community theater, musicals, spoken drama, opera
+  // Environment: Treated theaters (0.6–1.2 s RT60), moderate volume (200–1500 m³).
+  // Content: Mix of dialogue (body-worn lavaliers) and musical numbers (orchestra/band).
+  // Priority: Catch feedback during quiet dialogue, handle musical numbers gracefully.
+  // Ref: C50 clarity metric weights: 500 Hz (15%), 1 kHz (25%), 2 kHz (35%), 4 kHz (25%).
+  //      Body mic proximity effect extends usable range below 200 Hz.
+  theater: {
+    label: 'Theater',
+    description: 'Drama & Musicals',
+    feedbackThresholdDb: 7,
+    ringThresholdDb: 4,
+    growthRateThreshold: 1.5,
+    musicAware: true,
+    autoMusicAware: true,    // Auto-detect when orchestra starts/stops
+    fftSize: 8192,
+    minFrequency: 150,       // Body mic range with proximity effect
+    maxFrequency: 10000,     // Extended for sibilance from lavaliers
+    sustainMs: 250,          // Fast for dialogue dynamics
+    clearMs: 400,            // Standard clearing
+    holdTimeMs: 3000,
+    confidenceThreshold: 0.45,
+    prominenceDb: 12,
+    relativeThresholdDb: 18,
+    eqPreset: 'surgical',   // Narrow cuts preserve dialogue clarity
+    aWeightingEnabled: true, // A-weighting helps for dialogue-focused detection
+    inputGainDb: 12,         // Moderate gain for body mics
+    ignoreWhistle: true,
+  },
+
+  // ── MONITORS / WEDGES ────────────────────────────────────────────────────
+  // Stage wedge monitors, sidefills, drum fills, in-ear monitoring
+  // Environment: On-stage, very close mic-to-speaker proximity, high stage SPL.
+  // Content: Mix of instruments and vocals — each monitor carries different mix.
+  // Priority: Ultra-fast detection, narrow surgical cuts, prevent feedback before ring-out.
+  // Ref: DBX whitepaper — "every millisecond counts" for monitor feedback.
+  //      Monitor feedback typically 200–6000 Hz (vocal/mid range).
+  //      Short feedback loop delay = wider feedback regions (fewer, broader peaks).
+  monitors: {
+    label: 'Monitors',
+    description: 'Stage Wedges',
+    feedbackThresholdDb: 5,
+    ringThresholdDb: 3,
+    growthRateThreshold: 0.8,
+    musicAware: false,       // Monitor feedback is priority over music discrimination
+    autoMusicAware: false,
+    fftSize: 4096,           // Fastest time response for instant detection
+    minFrequency: 200,       // Monitor feedback typically mid-range
+    maxFrequency: 6000,      // Most monitor feedback is mid-range
+    sustainMs: 150,          // Ultra-fast confirmation
+    clearMs: 300,            // Fast clearing
+    holdTimeMs: 2000,        // Short hold — monitor engineer works fast
+    confidenceThreshold: 0.40, // Aggressive — better false positives than missed feedback
+    prominenceDb: 10,
+    relativeThresholdDb: 15,
+    eqPreset: 'surgical',   // Narrow notches preserve monitor clarity
+    aWeightingEnabled: false,
+    inputGainDb: 5,          // Hot signal from console
+    ignoreWhistle: false,    // Whistle-like feedback is real in monitors
+  },
+
+  // ── RING OUT / CALIBRATION ───────────────────────────────────────────────
+  // Pre-show system tuning, microphone gain structure setup, sound check
+  // Environment: Any venue — used during sound check with no audience/program.
+  // Content: No program material — test signals or deliberate feedback provocation.
+  // Priority: Maximum sensitivity, catch every resonance, find all problem frequencies.
+  // Ref: Smaart recommends 16K FFT + 1/24-octave banding for feedback work.
+  //      DBX whitepaper: AFS Fixed Mode — ring out with performers present when possible.
+  ringOut: {
+    label: 'Ring Out',
+    description: 'System Calibration',
+    feedbackThresholdDb: 4,
+    ringThresholdDb: 2,
+    growthRateThreshold: 0.5,
     musicAware: false,
+    autoMusicAware: false,
+    fftSize: 16384,          // Maximum frequency resolution (2.93 Hz at 48 kHz)
+    minFrequency: 60,        // Full range analysis
+    maxFrequency: 16000,     // Full range
+    sustainMs: 150,          // Fast confirmation
+    clearMs: 300,            // Fast clearing
+    holdTimeMs: 5000,        // Long hold for reference during EQ adjustments
+    confidenceThreshold: 0.30, // Surface everything
+    prominenceDb: 8,         // Very low prominence threshold
+    relativeThresholdDb: 12, // Very sensitive
+    eqPreset: 'surgical',   // Precise notch placement
+    aWeightingEnabled: false, // Full spectrum during calibration
+    inputGainDb: 15,
+    ignoreWhistle: true,
+  },
+
+  // ── BROADCAST / STUDIO ───────────────────────────────────────────────────
+  // TV studios, radio, podcast, recording, voice-over booths
+  // Environment: Treated, very quiet (NCB-15 to NCB-20), small/medium rooms, 0.3–0.5 s RT60.
+  // Content: Speech dominant (news anchors, DJs, podcast hosts), occasional music playback.
+  // Priority: Very sensitive detection in quiet environment, zero tolerance for feedback.
+  // Ref: Everest — studio noise floor NCB-15 to NCB-20. Close-mic proximity effect
+  //      extends usable range below 200 Hz. Speech dynamic range ~42 dB.
+  broadcast: {
+    label: 'Broadcast',
+    description: 'Studio & Podcast',
+    feedbackThresholdDb: 5,
+    ringThresholdDb: 3,
+    growthRateThreshold: 1.0,
+    musicAware: false,
+    autoMusicAware: false,
+    fftSize: 8192,
+    minFrequency: 80,        // Extended low for proximity effect on broadcast mics
+    maxFrequency: 12000,     // Broadcast audio extends higher than speech
+    sustainMs: 200,          // Fast confirmation
+    clearMs: 350,            // Fast clearing
+    holdTimeMs: 3000,
+    confidenceThreshold: 0.35, // Very aggressive in quiet environment
+    prominenceDb: 10,
+    relativeThresholdDb: 14, // Sensitive — low noise floor makes relative work well
+    eqPreset: 'surgical',   // Precise cuts for broadcast quality
+    aWeightingEnabled: true, // A-weighting for speech focus
+    inputGainDb: 15,
+    ignoreWhistle: true,
+  },
+
+  // ── OUTDOOR / FESTIVAL ───────────────────────────────────────────────────
+  // Open-air concerts, festivals, outdoor ceremonies, sports events
+  // Environment: No room reflections, wind/ambient noise, large throw distances.
+  //   Atmospheric absorption reduces HF propagation.
+  // Content: Variable — speech for ceremonies, music for concerts.
+  // Priority: Handle wind noise, ignore ambient, focus on genuine speaker-to-mic coupling.
+  // Ref: Free-field falloff 6 dB per doubling distance (Everest). No room modes.
+  //      Wind noise predominantly below 100 Hz. Atmospheric HF absorption above 8 kHz.
+  outdoor: {
+    label: 'Outdoor',
+    description: 'Open Air & Festivals',
+    feedbackThresholdDb: 10,
+    ringThresholdDb: 6,
+    growthRateThreshold: 2.5,
+    musicAware: false,       // User enables if music present
+    autoMusicAware: false,
+    fftSize: 4096,           // Fast time response for dynamic outdoor conditions
+    minFrequency: 100,       // Above wind rumble range
+    maxFrequency: 12000,     // Reduced HF due to atmospheric absorption
+    sustainMs: 300,          // Moderate sustain
+    clearMs: 450,            // Moderate clearing
+    holdTimeMs: 2500,
+    confidenceThreshold: 0.50, // Moderate — ambient noise creates more uncertainty
+    prominenceDb: 14,        // Higher prominence to cut through ambient
+    relativeThresholdDb: 22, // Higher relative threshold for noisy outdoor
+    eqPreset: 'heavy',      // Wider cuts for outdoor PA
+    aWeightingEnabled: true, // A-weighting helps filter wind rumble perception
+    inputGainDb: 5,          // Line level from console
+    ignoreWhistle: true,
   },
 } as const
 
-// Default settings for the analyzer - OPTIMIZED FOR CORPORATE/CONFERENCE SPEECH SYSTEMS
-// AGGRESSIVE DETECTION - better to have false positives than miss real feedback!
+// Default settings for the analyzer — OPTIMIZED FOR CORPORATE/CONFERENCE SPEECH SYSTEMS
+// Target: Large ballrooms, exhibit halls, convention centers (speech through PA)
+// Research: Everest speech range 170–4000 Hz, extend to 8 kHz for sibilance.
+//           Ballroom RT60 0.8–1.5 s, volume 500–2000 m³, Schroeder freq ~63–100 Hz.
+//           A-weighting appropriate for moderate speech SPL (~65–85 dBA).
+//           AGGRESSIVE DETECTION — better false positives than missed real feedback.
 export const DEFAULT_SETTINGS = {
-  mode: 'feedbackHunt' as const, // Feedback Hunt is the balanced default for PA systems
-  fftSize: 8192 as const, // Good frequency resolution for accurate detection
+  mode: 'speech' as const, // Speech/Conference is the default for corporate PA
+  fftSize: 8192 as const, // 5.9 Hz resolution, 170 ms at 48 kHz — balanced for speech
   smoothingTimeConstant: 0.5, // Faster response for quick detection
-  minFrequency: 200, // Vocal-focused lower bound (below this is mostly HVAC rumble)
-  maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
-  feedbackThresholdDb: 6, // AGGRESSIVE - catch feedback early, before it's dangerous
-  ringThresholdDb: 4, // AGGRESSIVE - catch resonances before they become feedback
-  growthRateThreshold: 1.5, // FAST - detect growing peaks quickly
-  holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
-  noiseFloorDecay: 0.98, // Fast adaptation for dynamic environments
+  minFrequency: 150, // Extended for body mic chest resonance (Everest: speech starts ~170 Hz)
+  maxFrequency: 8000, // Speech sibilance upper bound (intelligibility band: 500 Hz–4 kHz)
+  feedbackThresholdDb: 6, // AGGRESSIVE — catch feedback before audience hears it
+  ringThresholdDb: 3, // AGGRESSIVE — catch resonances before they become feedback
+  growthRateThreshold: 1.0, // FAST — detect growing peaks immediately
+  holdTimeMs: 3000, // Long hold for EQ reference during adjustments
+  noiseFloorDecay: 0.98, // Fast adaptation for dynamic conference environments
   peakMergeCents: 50,
-  maxDisplayedIssues: 8, // Show more issues - don't hide potential problems
-  eqPreset: 'surgical' as const, // Precise narrow cuts for speech (preserve clarity)
-  musicAware: false, // Disabled - no music in corporate/conference
-  autoMusicAware: false, // Auto music-aware mode off for speech systems
-  autoMusicAwareHysteresisDb: 15, // 15dB above noise floor = band is playing
+  maxDisplayedIssues: 8, // Show more issues — don't hide potential problems
+  eqPreset: 'surgical' as const, // Precise narrow cuts preserve speech clarity
+  musicAware: false, // Disabled — no music in corporate/conference
+  autoMusicAware: false, // Auto music-aware off for speech systems
+  autoMusicAwareHysteresisDb: 15, // 15 dB above noise floor = band is playing
   inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
-  graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
+  graphFontSize: 15, // Default label size for canvas graphs (8–26 px)
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching
   showTooltips: true, // Show help tooltips (useful for AV techs)
-  aWeightingEnabled: true, // A-WEIGHTING ON - prioritizes speech frequencies (2-5kHz)
-  // Confidence filtering - LOW threshold, better false positives than missing real feedback
-  confidenceThreshold: 0.40, // 40% - very aggressive, surface almost everything
-  // Room acoustics - defaults to medium conference room
-  roomRT60: 0.7, // Typical treated conference room (0.5-0.8s)
-  roomVolume: 250, // Medium conference room ~250m³ (seats ~30 people)
+  aWeightingEnabled: true, // A-WEIGHTING ON — prioritizes speech intelligibility band (2–5 kHz)
+  // Confidence filtering — LOW threshold, surface almost everything
+  confidenceThreshold: 0.35, // 35% — very aggressive for speech environments
+  // Room acoustics — defaults to large ballroom / exhibit hall
+  roomRT60: 1.0, // Large ballroom (hard floors, high ceilings, 0.8–1.5 s typical)
+  roomVolume: 1000, // ~1000 m³ ballroom (50×40×20 ft, seats ~200 people)
   // Room preset identifier
-  roomPreset: 'medium' as const, // Default to medium conference room
-  
+  roomPreset: 'large' as const, // Default to large auditorium/ballroom
+
   // ==================== ADVANCED ALGORITHM SETTINGS ====================
   // Based on DAFx-16, DBX, and KU Leuven research papers
   // TUNED FOR FAST DETECTION (accepts more false positives for speed)
   algorithmMode: 'combined' as const, // MSD + Phase for best accuracy
-  showAlgorithmScores: false, // Hide advanced scores by default (for advanced users)
+  showAlgorithmScores: false, // Hide advanced scores by default
   // Harmonic filter and room mode settings
   harmonicFilterEnabled: true, // Enable harmonic series detection to filter instruments
-  roomModesEnabled: false, // Room mode calculation disabled by default (advanced feature)
-  roomLengthM: 10, // Default room length in meters
-  roomWidthM: 8, // Default room width in meters
-  roomHeightM: 3, // Default room height in meters
-  roomDimensionsUnit: 'meters' as const, // Default unit for dimension input
-  // Peak timing
-  sustainMs: 250, // Fast confirmation for speech dynamics
-  clearMs: 400, // Fast clearing for responsive display
+  roomModesEnabled: false, // Room mode calculation disabled by default (advanced)
+  roomLengthM: 15, // Default room length — large ballroom (~50 ft)
+  roomWidthM: 12, // Default room width — large ballroom (~40 ft)
+  roomHeightM: 5, // Default ceiling height — ballroom (~16 ft)
+  roomDimensionsUnit: 'meters' as const,
+  // Peak timing — fast for speech dynamics (consonant transients 5–15 ms)
+  sustainMs: 200, // Fast confirmation — well above consonant transient duration
+  clearMs: 350, // Quick clearing for responsive display
   // Threshold control
   thresholdMode: 'hybrid' as const,
-  relativeThresholdDb: 18, // Slightly sensitive relative threshold
-  prominenceDb: 12, // Lower prominence for catching subtle peaks
+  relativeThresholdDb: 16, // Sensitive relative threshold for speech
+  prominenceDb: 10, // Low prominence catches subtle peaks in quiet rooms
   // Noise floor timing
-  noiseFloorAttackMs: 200, // Fast attack for dynamic environments
+  noiseFloorAttackMs: 200, // Fast attack for dynamic conference environments
   noiseFloorReleaseMs: 1000, // Moderate release
   // Track management
-  maxTracks: 64, // Maximum simultaneous tracks
-  trackTimeoutMs: 1000, // Remove track after 1s inactive
-  ignoreWhistle: true, // Suppress whistle classifications by default
+  maxTracks: 64,
+  trackTimeoutMs: 1000, // Remove track after 1 s inactive
+  ignoreWhistle: true, // Suppress whistle classifications in corporate setting
   // Display / canvas
-  rtaDbMin: -100, // RTA display range minimum
-  rtaDbMax: 0, // RTA display range maximum
-  spectrumLineWidth: 1.5, // RTA line width in pixels
+  rtaDbMin: -100,
+  rtaDbMax: 0,
+  spectrumLineWidth: 1.5,
 }
 
-// Room size presets for quick switching in corporate/conference environments
-// AGGRESSIVE THRESHOLDS - better false positives than missing real feedback!
+// Room size presets — covers common professional venue types
+// Schroeder freq = 2000 * sqrt(RT60 / Volume) — below this, room modes dominate
 export const ROOM_PRESETS = {
   small: {
-    label: 'Small Boardroom',
-    description: '10-20 people, huddle rooms, small meeting spaces',
-    roomRT60: 0.5, // Well-treated small room
-    roomVolume: 80, // ~80m³ (approx 20x15x10 ft)
-    schroederFreq: 158, // Pre-calculated: 2000 * sqrt(0.5/80)
-    feedbackThresholdDb: 5, // AGGRESSIVE - quiet rooms need early warning
+    label: 'Small Room',
+    description: 'Boardrooms, huddle rooms, podcast booths (10–20 people)',
+    roomRT60: 0.4, // Well-treated small room (Hopkins: furnished dwellings 0.4–0.6 s)
+    roomVolume: 80, // ~80 m³ (20×15×10 ft)
+    schroederFreq: 141, // 2000 * sqrt(0.4/80) ≈ 141 Hz
+    feedbackThresholdDb: 5,
     ringThresholdDb: 3,
   },
   medium: {
-    label: 'Medium Conference Room',
-    description: '20-50 people, standard conference/training rooms',
-    roomRT60: 0.7, // Typical treated conference room
-    roomVolume: 250, // ~250m³ (approx 30x25x12 ft)
-    schroederFreq: 106, // Pre-calculated: 2000 * sqrt(0.7/250)
-    feedbackThresholdDb: 6, // AGGRESSIVE - catch problems early
+    label: 'Medium Room',
+    description: 'Conference rooms, classrooms, training rooms (20–80 people)',
+    roomRT60: 0.7, // Treated conference room
+    roomVolume: 300, // ~300 m³ (35×28×12 ft)
+    schroederFreq: 97, // 2000 * sqrt(0.7/300) ≈ 97 Hz
+    feedbackThresholdDb: 6,
     ringThresholdDb: 4,
   },
   large: {
-    label: 'Large Auditorium',
-    description: '50-200 people, ballrooms, auditoriums, town halls',
-    roomRT60: 1.0, // Larger spaces have more reverb
-    roomVolume: 1000, // ~1000m³ (approx 50x40x20 ft)
-    schroederFreq: 63, // Pre-calculated: 2000 * sqrt(1.0/1000)
-    feedbackThresholdDb: 7, // Slightly less aggressive due to ambient noise
+    label: 'Large Venue',
+    description: 'Ballrooms, auditoriums, theaters, town halls (80–500 people)',
+    roomRT60: 1.0, // Ballroom / auditorium
+    roomVolume: 1000, // ~1000 m³ (50×40×20 ft)
+    schroederFreq: 63, // 2000 * sqrt(1.0/1000) ≈ 63 Hz
+    feedbackThresholdDb: 7,
+    ringThresholdDb: 5,
+  },
+  arena: {
+    label: 'Arena / Hall',
+    description: 'Concert halls, arenas, convention centers (500+ people)',
+    roomRT60: 1.8, // Concert hall / arena (Everest: 1.5–2.5 s)
+    roomVolume: 5000, // ~5000 m³
+    schroederFreq: 38, // 2000 * sqrt(1.8/5000) ≈ 38 Hz
+    feedbackThresholdDb: 9,
+    ringThresholdDb: 6,
+  },
+  worship: {
+    label: 'Worship Space',
+    description: 'Churches, cathedrals, temples (highly reverberant)',
+    roomRT60: 2.0, // Reverberant worship (Everest Fig 7-13: 1.5–4.0 s)
+    roomVolume: 2000, // ~2000 m³ — medium church
+    schroederFreq: 63, // 2000 * sqrt(2.0/2000) ≈ 63 Hz
+    feedbackThresholdDb: 8,
     ringThresholdDb: 5,
   },
   custom: {
     label: 'Custom',
     description: 'Manual RT60 and volume settings',
-    roomRT60: 0.7,
-    roomVolume: 250,
-    schroederFreq: 106,
+    roomRT60: 1.0,
+    roomVolume: 1000,
+    schroederFreq: 63,
     feedbackThresholdDb: 6,
     ringThresholdDb: 4,
   },

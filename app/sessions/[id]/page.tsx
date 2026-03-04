@@ -7,11 +7,20 @@ import { ArrowLeft, AlertCircle } from 'lucide-react'
 import { formatFrequency, formatDuration, formatDate } from '@/lib/utils/pitchUtils'
 
 const MODE_LABELS: Record<string, string> = {
-  feedbackHunt: 'Feedback Hunt',
-  vocalRing: 'Vocal Ring',
-  musicAware: 'Music-Aware',
-  aggressive: 'Aggressive',
-  calibration: 'Calibration',
+  speech: 'Speech',
+  worship: 'Worship',
+  liveMusic: 'Live Music',
+  theater: 'Theater',
+  monitors: 'Monitors',
+  ringOut: 'Ring Out',
+  broadcast: 'Broadcast',
+  outdoor: 'Outdoor',
+  // Legacy mode names for backwards compatibility with saved sessions
+  feedbackHunt: 'Speech',
+  vocalRing: 'Speech',
+  musicAware: 'Live Music',
+  aggressive: 'Speech',
+  calibration: 'Ring Out',
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
