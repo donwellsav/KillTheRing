@@ -46,7 +46,13 @@ export function FrequencyHistogram({ bins, height = 200 }: FrequencyHistogramPro
       ctx.scale(dpr, dpr)
       ctx.clearRect(0, 0, width, height)
 
-      const pad = { top: 12, right: 12, bottom: 28, left: 36 }
+      const pad = {
+        top: Math.round(height * 0.06),
+        right: Math.round(width * 0.025),
+        bottom: Math.round(height * 0.14),
+        left: Math.round(width * 0.075),
+      }
+      const fontSize = Math.max(8, Math.min(13, Math.round(width * 0.01)))
       const plotW = width - pad.left - pad.right
       const plotH = height - pad.top - pad.bottom
 
@@ -56,7 +62,7 @@ export function FrequencyHistogram({ bins, height = 200 }: FrequencyHistogramPro
 
       if (bins.length === 0) {
         ctx.fillStyle = '#555'
-        ctx.font = '11px system-ui'
+        ctx.font = `${fontSize}px system-ui`
         ctx.textAlign = 'center'
         ctx.fillText('No detected issues in this session', pad.left + plotW / 2, pad.top + plotH / 2)
         return
@@ -86,7 +92,7 @@ export function FrequencyHistogram({ bins, height = 200 }: FrequencyHistogramPro
 
       // Count axis (left)
       ctx.fillStyle = '#555'
-      ctx.font = '10px system-ui'
+      ctx.font = `${fontSize}px system-ui`
       ctx.textAlign = 'right'
       const steps = [0, 0.5, 1]
       for (const s of steps) {

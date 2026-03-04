@@ -72,7 +72,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs font-medium text-foreground">{currentFreqPreset.label}</span>
-                <span className="text-[10px] text-muted-foreground font-mono">
+                <span className="text-[0.625rem] text-muted-foreground font-mono">
                   {currentFreqPreset.minFrequency}-{currentFreqPreset.maxFrequency}Hz
                 </span>
               </div>
@@ -93,7 +93,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
                     }`}
                   >
                     <span className="text-xs font-medium">{preset.label}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground">
+                    <span className="text-[0.625rem] font-mono text-muted-foreground">
                       {preset.minFrequency}-{preset.maxFrequency}Hz
                     </span>
                   </button>
@@ -118,7 +118,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               </Tooltip>
             )}
             {settings.autoMusicAware && (
-              <span className={`px-1 py-px rounded text-[11px] font-medium border leading-4 ${
+              <span className={`px-1 py-px rounded text-[0.6875rem] font-medium border leading-4 ${
                 settings.musicAware
                   ? 'bg-primary/10 border-primary/40 text-primary'
                   : 'bg-muted border-border text-muted-foreground'
@@ -148,7 +148,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
             <SliderRow
               label="Threshold"
               value={`${settings.feedbackThresholdDb}dB`}
-              tooltip={settings.showTooltips ? 'Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.' : undefined}
+              tooltip={settings.showTooltips ? 'Primary sensitivity. 4-6 dB sensitive (speech/monitors), 8-10 dB balanced (worship/outdoor), 12+ dB conservative (live music).' : undefined}
               min={2} max={20} step={1}
               sliderValue={settings.feedbackThresholdDb}
               onChange={(v) => onSettingsChange({ feedbackThresholdDb: v })}
@@ -158,7 +158,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
             <SliderRow
               label="Ring"
               value={`${settings.ringThresholdDb}dB`}
-              tooltip={settings.showTooltips ? 'Resonance detection. 2-4dB calibration, 5-7dB normal, 8+dB shows.' : undefined}
+              tooltip={settings.showTooltips ? 'Resonance detection. 2-3 dB ring out/monitors, 4-5 dB normal, 6+ dB live music/outdoor.' : undefined}
               min={1} max={12} step={0.5}
               sliderValue={settings.ringThresholdDb}
               onChange={(v) => onSettingsChange({ ringThresholdDb: v })}

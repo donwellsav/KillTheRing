@@ -118,7 +118,7 @@ export function LogsViewer() {
           <BarChart3 className="w-4 h-4" />
           <span className="hidden sm:inline text-xs">Logs</span>
           {issueLogsCount > 0 && (
-            <span className="ml-0.5 sm:ml-1 px-1.5 py-0.5 bg-primary/20 text-primary text-[10px] rounded-full font-medium">
+            <span className="ml-0.5 sm:ml-1 px-1.5 py-0.5 bg-primary/20 text-primary text-[0.625rem] rounded-full font-medium">
               {issueLogsCount}
             </span>
           )}
@@ -172,7 +172,7 @@ export function LogsViewer() {
                               <span className="font-semibold capitalize">
                                 {log.type.replace(/_/g, ' ')}
                               </span>
-                              <span className="text-muted-foreground text-[10px]">
+                              <span className="text-muted-foreground text-[0.625rem]">
                                 {formatTimestamp(log.timestamp)}
                               </span>
                             </div>
@@ -304,7 +304,7 @@ export function LogsViewer() {
 function IssueLogDetails({ log }: { log: FeedbackIssueLog }) {
   const data = log.data
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-muted-foreground text-[10px]">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-muted-foreground text-[0.625rem]">
       <div>{data.frequency.toFixed(1)} Hz</div>
       <div>{data.amplitude.toFixed(1)} dB</div>
       <div className="capitalize">{data.severity}</div>

@@ -82,9 +82,19 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
     ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, width, height)
 
-    const padding = { top: 20, right: 40, bottom: 30, left: 50 }
+    const padding = {
+      top: Math.round(height * 0.05),
+      right: Math.round(width * 0.035),
+      bottom: Math.round(height * 0.075),
+      left: Math.round(width * 0.044),
+    }
     const plotWidth = width - padding.left - padding.right
     const plotHeight = height - padding.top - padding.bottom
+
+    // Scale font size proportionally to canvas width, clamped to readable range
+    const scaledFontSize = Math.max(9, Math.min(16, Math.round(width * 0.01)))
+    const fontSize = Math.round((graphFontSize + scaledFontSize) / 2)
+    const peakMarkerRadius = Math.max(3, Math.round(width * 0.005))
 
     const { RTA_FREQ_MIN, RTA_FREQ_MAX } = CANVAS_SETTINGS
     const RTA_DB_MIN = rtaDbMinProp ?? CANVAS_SETTINGS.RTA_DB_MIN
@@ -247,12 +257,12 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
       // Peak marker
       ctx.fillStyle = color
       ctx.beginPath()
-      ctx.arc(x, y, 5, 0, Math.PI * 2)
+      ctx.arc(x, y, peakMarkerRadius, 0, Math.PI * 2)
       ctx.fill()
 
       // Label
       ctx.fillStyle = color
-      ctx.font = `${graphFontSize + 3}px system-ui, sans-serif`
+      ctx.font = `${fontSize + 3}px system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.fillText(formatFrequency(freq), x, y - 10)
     }
@@ -261,7 +271,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
 
     // Draw axis labels
     ctx.fillStyle = '#666'
-    ctx.font = `${graphFontSize}px system-ui, sans-serif`
+    ctx.font = `${fontSize}px system-ui, sans-serif`
 
     // Y-axis (dB)
     ctx.textAlign = 'right'

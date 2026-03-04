@@ -377,30 +377,41 @@ export function shouldReportIssue(
     return false
   }
 
-  // Mode-specific filtering
+  // Mode-specific filtering — professional live sound scenarios
   switch (mode) {
-    case 'feedbackHunt':
-      // Report feedback and possible rings, not instruments
+    case 'speech':
+      // Corporate/conference — report feedback and rings, suppress instruments
       return label !== 'INSTRUMENT'
 
-    case 'vocalRing':
-      // Report all issues including possible rings
+    case 'worship':
+      // House of worship — music-aware, skip instruments during music portions
+      return label !== 'INSTRUMENT'
+
+    case 'liveMusic':
+      // Live music — only report clear feedback, skip instruments and possible rings
+      if (label === 'INSTRUMENT') return false
+      if (label === 'POSSIBLE_RING' && confidence < 0.65) return false
       return true
 
-    case 'musicAware':
-      // Skip instruments (RUNAWAY severity already handled above)
-      if (label === 'INSTRUMENT') {
-        return false
-      }
+    case 'theater':
+      // Theater/drama — report feedback and rings, skip instruments
+      return label !== 'INSTRUMENT'
+
+    case 'monitors':
+      // Stage monitors — report everything including instruments (could be feedback)
       return true
 
-    case 'aggressive':
-      // Report everything
+    case 'ringOut':
+      // Calibration — report everything including instruments
       return true
 
-    case 'calibration':
-      // Report everything including instruments
-      return true
+    case 'broadcast':
+      // Studio/broadcast — very sensitive, report feedback and rings
+      return label !== 'INSTRUMENT'
+
+    case 'outdoor':
+      // Outdoor — report feedback and strong rings, skip instruments
+      return label !== 'INSTRUMENT'
 
     default:
       return label === 'ACOUSTIC_FEEDBACK' || label === 'POSSIBLE_RING'

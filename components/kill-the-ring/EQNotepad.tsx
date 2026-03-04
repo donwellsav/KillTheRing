@@ -62,7 +62,7 @@ export function EQNotepad({ pins, onRemove, onClear }: EQNotepadProps) {
     return (
       <div className="flex flex-col items-center justify-center py-6 text-muted-foreground gap-1">
         <span className="text-xs">No cuts applied yet</span>
-        <span className="text-[10px] opacity-60">Tap "Apply" on an issue to log it here</span>
+        <span className="text-[0.625rem] opacity-60">Tap "Apply" on an issue to log it here</span>
       </div>
     )
   }
@@ -71,13 +71,13 @@ export function EQNotepad({ pins, onRemove, onClear }: EQNotepadProps) {
     <div className="flex flex-col gap-1.5">
       {/* Action bar */}
       <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[10px] text-muted-foreground">{pins.length} cut{pins.length === 1 ? '' : 's'} applied</span>
+        <span className="text-[0.625rem] text-muted-foreground">{pins.length} cut{pins.length === 1 ? '' : 's'} applied</span>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={copyText}
-            className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+            className="h-6 px-2 text-[0.625rem] gap-1 text-muted-foreground hover:text-foreground"
             aria-label="Copy EQ cuts to clipboard"
           >
             {copied ? <Check className="w-3 h-3 text-primary" /> : <ClipboardCopy className="w-3 h-3" />}
@@ -87,7 +87,7 @@ export function EQNotepad({ pins, onRemove, onClear }: EQNotepadProps) {
             variant="ghost"
             size="sm"
             onClick={onClear}
-            className="h-6 px-2 text-[10px] text-muted-foreground/50 hover:text-destructive"
+            className="h-6 px-2 text-[0.625rem] text-muted-foreground/50 hover:text-destructive"
             aria-label="Clear all applied cuts"
           >
             <Trash2 className="w-3 h-3" />
@@ -108,7 +108,7 @@ export function EQNotepad({ pins, onRemove, onClear }: EQNotepadProps) {
 
 function PinRow({ pin, onRemove }: { pin: PinnedCut; onRemove: (id: string) => void }) {
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-border bg-primary/5 text-[10px] group">
+    <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-border bg-primary/5 text-[0.625rem] group">
       <div className="flex-1 flex items-center gap-2 min-w-0">
         <span className="font-mono font-medium text-foreground whitespace-nowrap">
           {formatFrequency(pin.freq)}Hz

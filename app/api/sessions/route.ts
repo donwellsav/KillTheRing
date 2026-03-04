@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 const VALID_FFT_SIZES = [4096, 8192, 16384] as const
-const VALID_MODES = ['feedbackHunt', 'vocalRing', 'musicAware', 'aggressive', 'calibration'] as const
+const VALID_MODES = ['speech', 'worship', 'liveMusic', 'theater', 'monitors', 'ringOut', 'broadcast', 'outdoor'] as const
 const ID_PATTERN = /^[a-zA-Z0-9\-_]{1,128}$/
 
 export async function POST(req: NextRequest) {

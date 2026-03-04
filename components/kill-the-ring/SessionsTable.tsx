@@ -18,11 +18,20 @@ function ClientDate({ dateStr }: { dateStr: string }) {
 }
 
 const MODE_LABELS: Record<string, string> = {
-  feedbackHunt: 'Feedback Hunt',
-  vocalRing: 'Vocal Ring',
-  musicAware: 'Music-Aware',
-  aggressive: 'Aggressive',
-  calibration: 'Calibration',
+  speech: 'Speech',
+  worship: 'Worship',
+  liveMusic: 'Live Music',
+  theater: 'Theater',
+  monitors: 'Monitors',
+  ringOut: 'Ring Out',
+  broadcast: 'Broadcast',
+  outdoor: 'Outdoor',
+  // Legacy mode names for backwards compatibility with saved sessions
+  feedbackHunt: 'Speech',
+  vocalRing: 'Speech',
+  musicAware: 'Live Music',
+  aggressive: 'Speech',
+  calibration: 'Ring Out',
 }
 
 function DeleteButton({ id }: { id: string }) {
@@ -119,11 +128,11 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
               </td>
               <td className="px-4 py-3 text-right">
                 {s.ended_at ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-[0.625rem] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                     Ended
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  <span className="inline-flex items-center gap-1 text-[0.625rem] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                     Live
                   </span>
@@ -152,9 +161,9 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
               </Link>
               <div className="flex items-center gap-2">
                 {s.ended_at ? (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Ended</span>
+                  <span className="text-[0.625rem] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Ended</span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  <span className="inline-flex items-center gap-1 text-[0.625rem] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                     Live
                   </span>

@@ -111,17 +111,17 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-baseline gap-1.5 min-w-0">
             <span className="font-mono text-sm font-semibold text-foreground leading-none">
-              {freqStr}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">Hz</span>
+              {freqStr}<span className="text-[0.625rem] font-normal text-muted-foreground ml-0.5">Hz</span>
             </span>
             {pitchStr && (
-              <span className="text-[10px] font-mono text-muted-foreground leading-none">{pitchStr}</span>
+              <span className="text-[0.625rem] font-mono text-muted-foreground leading-none">{pitchStr}</span>
             )}
             {/* Cluster count badge — shows when multiple peaks merged into this advisory */}
             {(advisory.clusterCount ?? 1) > 1 && (
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex items-center text-[9px] text-sky-400 bg-sky-500/20 px-1 py-0.5 rounded-sm border border-sky-500/30">
+                    <span className="inline-flex items-center text-[0.5625rem] text-sky-400 bg-sky-500/20 px-1 py-0.5 rounded-sm border border-sky-500/30">
                       +{(advisory.clusterCount ?? 1) - 1}
                     </span>
                   </TooltipTrigger>
@@ -139,7 +139,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
                   <TooltipProvider delayDuration={300}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded-sm border border-amber-500/30">
+                        <span className="inline-flex items-center gap-0.5 text-[0.5625rem] text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded-sm border border-amber-500/30">
                           <TrendingUp className="w-2.5 h-2.5" />
                           {occurrences}x
                         </span>
@@ -159,7 +159,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
             {/* Confidence badge */}
             {advisory.confidence != null && (
               <span
-                className={`text-[9px] font-mono px-1 py-0.5 rounded-sm leading-none ${
+                className={`text-[0.5625rem] font-mono px-1 py-0.5 rounded-sm leading-none ${
                   advisory.confidence >= 0.85
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : advisory.confidence >= 0.70
@@ -176,7 +176,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
             
             {/* Severity badge */}
             <span
-              className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
+              className="text-[0.5625rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
               style={{ backgroundColor: `${severityColor}22`, color: severityColor, border: `1px solid ${severityColor}44` }}
             >
               {getSeverityText(advisory.severity)}
@@ -206,7 +206,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
 
         {/* Row 2: runaway / warning alert */}
         {(isRunaway || isWarning) && !isApplied && (
-          <div className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide ${
+          <div className={`flex items-center gap-1 text-[0.5625rem] font-bold uppercase tracking-wide ${
             isRunaway ? 'text-red-400' : 'text-amber-400'
           }`}>
             <AlertTriangle className={`w-2.5 h-2.5 flex-shrink-0 ${isRunaway ? 'animate-pulse' : ''}`} />
@@ -218,7 +218,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
 
         {/* Row 2b: Modal overlap and cumulative growth indicators */}
         {(advisory.modalOverlapFactor != null || advisory.cumulativeGrowthDb != null) && !isApplied && (
-          <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[0.5625rem] text-muted-foreground">
             {advisory.modalOverlapFactor != null && advisory.modalOverlapFactor < 0.3 && (
               <span className="text-amber-400" title="Isolated mode - high feedback risk">
                 M={advisory.modalOverlapFactor.toFixed(2)} isolated
@@ -240,7 +240,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
         {/* Row 3: EQ suggestion + send button */}
         {hasEq && (
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
+            <div className="flex items-center gap-2 text-[0.625rem] font-mono text-muted-foreground">
               <span>
                 GEQ <span className="text-foreground">{geq?.suggestedDb}dB</span>
                 {' @ '}{geq?.bandHz}
@@ -259,7 +259,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
                       onClick={() => onApply(advisory)}
                       disabled={isApplied}
                       aria-label={isApplied ? 'Cut sent to EQ Notepad' : `Send cut to EQ Notepad (${freqStr}Hz)`}
-                      className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                      className={`flex items-center gap-1 text-[0.625rem] px-1.5 py-0.5 rounded transition-colors ${
                         isApplied
                           ? 'text-primary cursor-default'
                           : 'text-muted-foreground hover:text-primary hover:bg-primary/10'

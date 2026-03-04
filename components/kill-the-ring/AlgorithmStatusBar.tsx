@@ -50,7 +50,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
 
   if (!isRunning) {
     return (
-      <div className="flex items-center gap-2 px-2 py-1 text-[9px] text-muted-foreground">
+      <div className="flex items-center gap-2 px-2 py-1 text-[0.5625rem] text-muted-foreground">
         <span className="font-mono">ALGO: {ALGORITHM_MODE_LABELS[algorithmMode]}</span>
         <span className="text-muted-foreground/50">|</span>
         <span>Waiting for audio...</span>
@@ -60,7 +60,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-2 px-2 py-1 text-[9px] font-mono">
+      <div className="flex items-center gap-2 px-2 py-1 text-[0.5625rem] font-mono">
         {/* Algorithm Mode */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -128,7 +128,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
               {msdFrameCount >= 13 && msdFrameCount < 30 && 'Ready for music analysis'}
               {msdFrameCount >= 30 && 'Optimal buffer for compressed content'}
             </p>
-            <p className="text-[10px] text-muted-foreground/70 mt-1">
+            <p className="text-[0.625rem] text-muted-foreground/70 mt-1">
               From DAFx-16: 7 frames = 100% speech accuracy
             </p>
           </TooltipContent>
@@ -149,7 +149,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
                 <p className="text-muted-foreground mt-1">
                   Estimated ratio: {compressionRatio.toFixed(1)}:1
                 </p>
-                <p className="text-[10px] text-muted-foreground/70 mt-1">
+                <p className="text-[0.625rem] text-muted-foreground/70 mt-1">
                   Thresholds automatically adjusted to reduce false positives from sustained notes.
                 </p>
               </TooltipContent>
