@@ -209,7 +209,7 @@ export const SPECTRAL_TRENDS = {
 // Track history settings
 export const TRACK_SETTINGS = {
   HISTORY_SIZE: 128, // Ring buffer size for track history
-  ASSOCIATION_TOLERANCE_CENTS: 100, // Max cents difference to associate peak to track (1 semitone)
+  ASSOCIATION_TOLERANCE_CENTS: 200, // Max cents difference to associate peak to track (2 semitones — synced with peakMergeCents)
   MAX_TRACKS: 64, // Maximum simultaneous tracks
   TRACK_TIMEOUT_MS: 1000, // Remove track after this inactive time
 } as const
@@ -217,13 +217,13 @@ export const TRACK_SETTINGS = {
 // Harmonic detection settings
 export const HARMONIC_SETTINGS = {
   MAX_HARMONIC: 8, // Check overtones up to this partial (2nd–8th)
-  TOLERANCE_CENTS: 100, // ±100 cents = 1 semitone; synced with ASSOCIATION_TOLERANCE_CENTS
+  TOLERANCE_CENTS: 200, // ±200 cents = 2 semitones; synced with ASSOCIATION_TOLERANCE_CENTS
   // Sub-harmonic check: if new peak F and an active track is near F*k, new peak may be the fundamental
   CHECK_SUB_HARMONICS: true,
 } as const
 
 // Band cooldown — suppresses re-triggering the same GEQ band after an advisory is explicitly cleared
-export const BAND_COOLDOWN_MS = 1500
+export const BAND_COOLDOWN_MS = 3000
 
 // Canvas rendering settings
 export const CANVAS_SETTINGS = {
@@ -290,7 +290,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     fftSize: 8192,           // 5.9 Hz resolution, 170 ms time constant at 48 kHz
     minFrequency: 150,       // Extended for chest-resonance body mics
     maxFrequency: 8000,      // Speech sibilance upper bound
-    sustainMs: 150,          // Fast confirmation — load-in friendly, above consonant transients
+    sustainMs: 250,          // Require ¼ second persistence — reduces transient false positives
     clearMs: 350,            // Quick clearing for responsive display
     holdTimeMs: 4000,        // Long hold — time to walk to EQ rack during load-in
     confidenceThreshold: 0.30, // Very aggressive — surface everything during ring-out
@@ -382,7 +382,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     fftSize: 8192,
     minFrequency: 150,       // Body mic range with proximity effect
     maxFrequency: 10000,     // Extended for sibilance from lavaliers
-    sustainMs: 200,          // Tightened for load-in — fast for dialogue dynamics
+    sustainMs: 250,          // Require ¼ second persistence — reduces transient false positives
     clearMs: 400,            // Standard clearing
     holdTimeMs: 4000,        // Extended — time to walk to EQ during load-in
     confidenceThreshold: 0.40, // More aggressive — surface more during setup
@@ -413,7 +413,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     fftSize: 4096,           // Fastest time response for instant detection
     minFrequency: 200,       // Monitor feedback typically mid-range
     maxFrequency: 6000,      // Most monitor feedback is mid-range
-    sustainMs: 200,          // Fast confirmation — raised from 150ms to reduce transient false positives
+    sustainMs: 250,          // Require ¼ second persistence — reduces transient false positives
     clearMs: 300,            // Fast clearing
     holdTimeMs: 3000,        // Extended — time to walk to EQ during load-in
     confidenceThreshold: 0.35, // More aggressive — surface everything during ring-out
@@ -443,7 +443,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     fftSize: 16384,          // Maximum frequency resolution (2.93 Hz at 48 kHz)
     minFrequency: 60,        // Full range analysis
     maxFrequency: 16000,     // Full range
-    sustainMs: 200,          // Fast confirmation — raised from 150ms to reduce noise false positives
+    sustainMs: 250,          // Require ¼ second persistence — reduces transient false positives
     clearMs: 300,            // Fast clearing
     holdTimeMs: 5000,        // Long hold for reference during EQ adjustments
     confidenceThreshold: 0.30, // Surface everything
@@ -473,7 +473,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     fftSize: 8192,
     minFrequency: 80,        // Extended low for proximity effect on broadcast mics
     maxFrequency: 12000,     // Broadcast audio extends higher than speech
-    sustainMs: 150,          // Tightened for load-in — fast confirmation
+    sustainMs: 250,          // Require ¼ second persistence — reduces transient false positives
     clearMs: 350,            // Fast clearing
     holdTimeMs: 4000,        // Extended — time to walk to EQ during setup
     confidenceThreshold: 0.30, // Very aggressive — surface everything in quiet studio
@@ -534,7 +534,7 @@ export const DEFAULT_SETTINGS = {
   growthRateThreshold: 1.0, // FAST — detect growing peaks immediately
   holdTimeMs: 4000, // Long hold — time to walk to EQ rack during load-in
   noiseFloorDecay: 0.98, // Fast adaptation for dynamic conference environments
-  peakMergeCents: 150, // 1.5 semitones — wider merge window reduces same-band duplicate advisories
+  peakMergeCents: 200, // 2 semitones — synced with ASSOCIATION_TOLERANCE_CENTS to prevent merge gap
   maxDisplayedIssues: 8, // Show more issues — don't hide potential problems
   eqPreset: 'surgical' as const, // Precise narrow cuts preserve speech clarity
   musicAware: false, // Disabled — no music in corporate/conference
@@ -543,7 +543,7 @@ export const DEFAULT_SETTINGS = {
   inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
   autoGainEnabled: true, // Auto-gain on by default — finds optimal level for any venue
   graphFontSize: 15, // Default label size for canvas graphs (8–26 px)
-  harmonicToleranceCents: 100, // ±100 cents for harmonic matching; synced with ASSOCIATION_TOLERANCE_CENTS
+  harmonicToleranceCents: 200, // ±200 cents for harmonic matching; synced with ASSOCIATION_TOLERANCE_CENTS
   showTooltips: true, // Show help tooltips (useful for AV techs)
   aWeightingEnabled: true, // A-WEIGHTING ON — prioritizes speech intelligibility band (2–5 kHz)
   // Confidence filtering — LOW threshold, surface almost everything
@@ -567,7 +567,7 @@ export const DEFAULT_SETTINGS = {
   roomHeightM: 5, // Default ceiling height — ballroom (~16 ft)
   roomDimensionsUnit: 'meters' as const,
   // Peak timing — fast for speech dynamics (consonant transients 5–15 ms)
-  sustainMs: 150, // Fast confirmation — load-in friendly, above consonant transients
+  sustainMs: 250, // Require ¼ second persistence — reduces transient false positives
   clearMs: 350, // Quick clearing for responsive display
   // Threshold control
   thresholdMode: 'hybrid' as const,
@@ -737,17 +737,17 @@ export const PERSISTENCE_SCORING = {
 // Signal presence gate — prevents auto-gain from amplifying silence into phantom peaks
 export const SIGNAL_GATE = {
   /** Default silence threshold in dBFS (pre-gain). Below this, no detection runs. */
-  DEFAULT_SILENCE_THRESHOLD_DB: -65,
-  /** Per-mode overrides (quieter venues need lower thresholds) */
+  DEFAULT_SILENCE_THRESHOLD_DB: -55,
+  /** Per-mode overrides — raised 10 dB to reject ambient room noise in live venues */
   MODE_SILENCE_THRESHOLDS: {
-    speech: -65,
-    worship: -60,
-    liveMusic: -55,
-    theater: -68,
-    monitors: -55,
-    ringOut: -70,      // ring-out wants maximum sensitivity
-    broadcast: -70,    // studio is very quiet
-    outdoor: -55,
+    speech: -55,
+    worship: -50,
+    liveMusic: -45,
+    theater: -58,
+    monitors: -45,
+    ringOut: -60,      // ring-out wants maximum sensitivity
+    broadcast: -60,    // studio is very quiet
+    outdoor: -45,
   } as Record<string, number>,
 } as const
 
@@ -758,7 +758,7 @@ export const HYSTERESIS = {
 } as const
 
 // Hotspot event cooldown — prevents inflated occurrence counts from rapid re-triggers
-export const HOTSPOT_COOLDOWN_MS = 2000
+export const HOTSPOT_COOLDOWN_MS = 3000
 
 // Phase coherence from KU Leuven/Nyquist analysis
 export const PHASE_SETTINGS = {
