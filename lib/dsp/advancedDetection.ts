@@ -856,7 +856,7 @@ export const DEFAULT_FUSION_CONFIG: FusionConfig = {
   msdMinFrames: MSD_CONSTANTS.MIN_FRAMES_SPEECH,
   phaseThreshold: PHASE_CONSTANTS.HIGH_COHERENCE,
   enableCompressionDetection: true,
-  feedbackThreshold: 0.70, // Tightened from 0.65 — requires stronger algorithm agreement to reduce false positives
+  feedbackThreshold: 0.60, // Lowered to restore detection sensitivity — 0.70 was overcorrection
 }
 
 /**
@@ -903,7 +903,7 @@ export function fuseAlgorithmResults(
       activeAlgorithms = ['phase', 'ihr', 'ptmr', 'existing']
       break
     case 'combined':
-      activeAlgorithms = ['msd', 'phase', 'ihr', 'ptmr', 'existing']
+      activeAlgorithms = ['msd', 'phase', 'spectral', 'comb', 'ihr', 'ptmr', 'existing']
       break
     case 'all':
       activeAlgorithms = ['msd', 'phase', 'spectral', 'comb', 'ihr', 'ptmr', 'existing']
@@ -1161,7 +1161,7 @@ export function detectContentType(
   let totalPower = 0
   let weightedSum = 0
   for (let i = 0; i < spectrum.length; i++) {
-    const power = spectrum[i] * spectrum[i]
+    const power = Math.pow(10, spectrum[i] / 10)
     totalPower += power
     weightedSum += i * power
   }
@@ -1171,7 +1171,7 @@ export function detectContentType(
   let cumulative = 0
   let rolloffBin = spectrum.length - 1
   for (let i = 0; i < spectrum.length; i++) {
-    cumulative += spectrum[i] * spectrum[i]
+    cumulative += Math.pow(10, spectrum[i] / 10)
     if (cumulative >= rolloffThreshold) {
       rolloffBin = i
       break

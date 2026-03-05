@@ -98,7 +98,7 @@ const bandClearedAt = new Map<number, number>()
 
 // Global advisory rate limiter — max 1 NEW advisory per second (updates to existing still allowed)
 let lastAdvisoryCreatedAt = 0
-const ADVISORY_RATE_LIMIT_MS = 1000
+const ADVISORY_RATE_LIMIT_MS = 500
 
 // Decay rate analysis — tracks recently cleared peaks to analyze their decay signature
 // Room modes decay exponentially (following RT60); feedback drops instantly (Hopkins §1.2.6.3)
@@ -125,6 +125,10 @@ const ampBuffer = new AmplitudeHistoryBuffer()
 /** Timestamp of the last frame fed to MSD/amplitude buffers.
  *  Multiple peaks in the same frame share the same spectrum; only add once. */
 let lastFrameTimestamp: number = -1
+
+/** Spectrum peak and RMS (in dB) from the most recent frame, used for crest factor. */
+let specMax = -Infinity
+let rmsDb = -100
 
 // ─── Classification temporal smoothing ──────────────────────────────────────
 // Prevents advisory flickering by requiring N consistent classification frames
@@ -522,6 +526,8 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       ampBuffer.reset()
       classificationLabelHistory.clear()
       lastFrameTimestamp = -1
+      specMax = -Infinity
+      rmsDb = -100
       break
     }
 
@@ -552,7 +558,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         // Use the analysis frequency range from settings
         const startBin = Math.max(1, Math.floor((settings.minFrequency ?? 200) * fft / sr))
         const endBin = Math.min(spectrum.length - 1, Math.ceil((settings.maxFrequency ?? 8000) * fft / sr))
-        let specMax = -Infinity
+        specMax = -Infinity
         let sumLinearPower = 0
         let validBins = 0
         for (let i = startBin; i <= endBin; i++) {
@@ -560,7 +566,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
           sumLinearPower += Math.pow(10, spectrum[i] / 10)
           validBins++
         }
-        const rmsDb = validBins > 0 ? 10 * Math.log10(sumLinearPower / validBins) : -100
+        rmsDb = validBins > 0 ? 10 * Math.log10(sumLinearPower / validBins) : -100
         ampBuffer.addSample(specMax, rmsDb)
 
         // Phase coherence: extract phase angles whenever any tracked peak exists.
@@ -636,7 +642,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       const ptmrResult = calculatePTMR(spectrum, binIndex)
 
       // Content type detection (needed for MSD frame count selection)
-      const crestFactor = peak.trueAmplitudeDb - (peak.noiseFloorDb ?? -80)
+      const crestFactor = specMax - rmsDb
       const contentType = detectContentType(spectrum, crestFactor, spectralResult.flatness)
 
       // MSD from half-resolution history buffer (DAFx-16 paper, max-pooled 2:1)

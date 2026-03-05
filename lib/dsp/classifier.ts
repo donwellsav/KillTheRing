@@ -640,7 +640,7 @@ export function classifyTrackWithAlgorithms(
     if (!reasons.some(r => r.includes('Algorithm fusion'))) {
       reasons.push(`Algorithm fusion: ${(fusionResult.feedbackProbability * 100).toFixed(0)}% (${fusionResult.contributingAlgorithms.join('+')})`)
     }
-  } else if (fusionResult.verdict === 'NOT_FEEDBACK' && fusionResult.confidence > 0.7) {
+  } else if (fusionResult.verdict === 'NOT_FEEDBACK' && fusionResult.confidence > 0.7 && baseResult.severity !== 'RUNAWAY' && baseResult.severity !== 'GROWING') {
     pFeedback = Math.min(pFeedback, 0.3)
     if (!reasons.some(r => r.includes('Algorithm fusion'))) {
       reasons.push(`Fusion: likely not feedback (${(fusionResult.confidence * 100).toFixed(0)}% confident)`)

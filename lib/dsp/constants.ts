@@ -241,7 +241,7 @@ export const SPECTRAL_TRENDS = {
 // Track history settings
 export const TRACK_SETTINGS = {
   HISTORY_SIZE: 128, // Ring buffer size for track history
-  ASSOCIATION_TOLERANCE_CENTS: 200, // Max cents difference to associate peak to track (2 semitones — synced with peakMergeCents)
+  ASSOCIATION_TOLERANCE_CENTS: 100, // Max cents difference to associate peak to track (1 semitone — synced with peakMergeCents)
   MAX_TRACKS: 64, // Maximum simultaneous tracks
   TRACK_TIMEOUT_MS: 1000, // Remove track after this inactive time
 } as const
@@ -249,13 +249,13 @@ export const TRACK_SETTINGS = {
 // Harmonic detection settings
 export const HARMONIC_SETTINGS = {
   MAX_HARMONIC: 8, // Check overtones up to this partial (2nd–8th)
-  TOLERANCE_CENTS: 200, // ±200 cents = 2 semitones; synced with ASSOCIATION_TOLERANCE_CENTS
+  TOLERANCE_CENTS: 100, // ±100 cents = 1 semitone; synced with ASSOCIATION_TOLERANCE_CENTS
   // Sub-harmonic check: if new peak F and an active track is near F*k, new peak may be the fundamental
   CHECK_SUB_HARMONICS: true,
 } as const
 
 // Band cooldown — suppresses re-triggering the same GEQ band after an advisory is explicitly cleared
-export const BAND_COOLDOWN_MS = 3000
+export const BAND_COOLDOWN_MS = 1500
 
 // Canvas rendering settings
 export const CANVAS_SETTINGS = {
@@ -314,20 +314,20 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   speech: {
     label: 'Speech',
     description: 'Corporate & Conference',
-    feedbackThresholdDb: 8,
-    ringThresholdDb: 5,
+    feedbackThresholdDb: 6,
+    ringThresholdDb: 3,
     growthRateThreshold: 1.0,
     musicAware: false,
     autoMusicAware: false,
     fftSize: 8192,           // 5.9 Hz resolution, 170 ms time constant at 48 kHz
     minFrequency: 150,       // Extended for chest-resonance body mics
     maxFrequency: 10000,     // Catches condenser sibilance feedback in 8–10 kHz range
-    sustainMs: 350,          // Filters speech plosives (~100 ms) while catching sustained feedback
+    sustainMs: 200,          // Filters speech plosives (~100 ms) while catching sustained feedback
     clearMs: 400,            // Slightly longer decay reduces display flicker
     holdTimeMs: 4000,        // Long hold — time to walk to EQ rack during load-in
     confidenceThreshold: 0.35, // Catches early quiet feedback while filtering noise
     prominenceDb: 8,         // Lowered to catch quieter peaks with MSD confirmation
-    relativeThresholdDb: 18, // Headroom above noise floor in quiet conference rooms
+    relativeThresholdDb: 16, // Headroom above noise floor in quiet conference rooms
     eqPreset: 'surgical',   // Narrow cuts preserve speech clarity
     aWeightingEnabled: true, // Prioritizes 2–5 kHz speech intelligibility band
     inputGainDb: 15,
@@ -566,7 +566,7 @@ export const DEFAULT_SETTINGS = {
   growthRateThreshold: 1.0, // Allows MSD analysis on slower-growing early feedback
   holdTimeMs: 4000, // Long hold — time to walk to EQ rack during load-in
   noiseFloorDecay: 0.98, // Fast adaptation for dynamic conference environments
-  peakMergeCents: 200, // 2 semitones — synced with ASSOCIATION_TOLERANCE_CENTS to prevent merge gap
+  peakMergeCents: 100, // 1 semitone — synced with ASSOCIATION_TOLERANCE_CENTS to prevent merge gap
   maxDisplayedIssues: 8, // Show more issues — don't hide potential problems
   eqPreset: 'surgical' as const, // Precise narrow cuts preserve speech clarity
   musicAware: false, // Disabled — no music in corporate/conference
@@ -575,7 +575,7 @@ export const DEFAULT_SETTINGS = {
   inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
   autoGainEnabled: true, // Auto-gain on by default — finds optimal level for any venue
   graphFontSize: 15, // Default label size for canvas graphs (8–26 px)
-  harmonicToleranceCents: 200, // ±200 cents for harmonic matching; synced with ASSOCIATION_TOLERANCE_CENTS
+  harmonicToleranceCents: 100, // ±100 cents for harmonic matching; synced with ASSOCIATION_TOLERANCE_CENTS
   showTooltips: true, // Show help tooltips (useful for AV techs)
   aWeightingEnabled: true, // A-WEIGHTING ON — prioritizes speech intelligibility band (2–5 kHz)
   // Confidence filtering — catches early quiet feedback while filtering noise
@@ -732,7 +732,7 @@ export const MSD_SETTINGS = {
   /** Minimum frames for rock/pop (22% accuracy - use with compression detection) */
   MIN_FRAMES_ROCK: 50,
   /** Default minimum frames */
-  DEFAULT_MIN_FRAMES: 20, // ~333ms at 60fps — increased from 15 for better statistical confidence
+  DEFAULT_MIN_FRAMES: 12, // ~200ms at 60fps — balanced between early detection and statistical confidence
   /** Maximum frames (balance accuracy vs latency) */
   MAX_FRAMES: 50,
   /** Ring buffer size for MSD magnitude history per bin */
@@ -771,16 +771,16 @@ export const PERSISTENCE_SCORING = {
 // Signal presence gate — prevents auto-gain from amplifying silence into phantom peaks
 export const SIGNAL_GATE = {
   /** Default silence threshold in dBFS (pre-gain). Below this, no detection runs. */
-  DEFAULT_SILENCE_THRESHOLD_DB: -55,
-  /** Per-mode overrides — raised 10 dB to reject ambient room noise in live venues */
+  DEFAULT_SILENCE_THRESHOLD_DB: -65,
+  /** Per-mode overrides — restored to baseline sensitivity */
   MODE_SILENCE_THRESHOLDS: {
-    speech: -55,
-    worship: -50,
+    speech: -65,
+    worship: -58,
     liveMusic: -45,
     theater: -58,
     monitors: -45,
-    ringOut: -60,      // ring-out wants maximum sensitivity
-    broadcast: -60,    // studio is very quiet
+    ringOut: -70,      // ring-out wants maximum sensitivity
+    broadcast: -70,    // studio is very quiet
     outdoor: -45,
   } as Record<string, number>,
 } as const
@@ -788,7 +788,7 @@ export const SIGNAL_GATE = {
 // Hysteresis for peak re-detection — prevents on-off-on flickering
 export const HYSTERESIS = {
   /** Extra dB above threshold required to re-trigger a recently cleared peak */
-  RE_TRIGGER_DB: 3,
+  RE_TRIGGER_DB: 1.5,
 } as const
 
 // Hotspot event cooldown — prevents inflated occurrence counts from rapid re-triggers

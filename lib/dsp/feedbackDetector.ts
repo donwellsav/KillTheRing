@@ -755,7 +755,10 @@ export class FeedbackDetector {
       }
 
       // When no signal present, skip peak detection. Noise floor continues tracking.
-      if (!this._isSignalPresent) return
+      if (!this._isSignalPresent) {
+        this._clearStalePeaksOnSilence(dt)
+        return
+      }
     } else {
       // Manual gain mode — still check signal presence via raw peak scan
       let rawPeak = -100
@@ -767,7 +770,10 @@ export class FeedbackDetector {
       }
       this._rawPeakDb = rawPeak
       this._isSignalPresent = rawPeak >= this._silenceThresholdDb
-      if (!this._isSignalPresent) return
+      if (!this._isSignalPresent) {
+        this._clearStalePeaksOnSilence(dt)
+        return
+      }
     }
 
     // Use auto-gain when enabled, otherwise manual setting
@@ -1000,7 +1006,7 @@ export class FeedbackDetector {
           this.callbacks.onPeakDetected?.(peak)
         }
       } else {
-        hold[i] = 0
+        hold[i] = Math.max(0, hold[i] - dt * 2)
 
         if (active[i] === 1) {
           dead[i] += dt
@@ -1283,11 +1289,8 @@ export class FeedbackDetector {
     const numFirstDeriv = frameCount - 1
     const avgGrowthRate = numFirstDeriv > 0 ? sumFirstDeriv / numFirstDeriv : 0
 
-    // If not growing, not feedback
-    if (avgGrowthRate < this.growthRateThreshold) {
-      this.msdConfirmFrames[binIndex] = 0
-      return { msd: 999, growthRate: avgGrowthRate, isHowl: false, fastConfirm: false }
-    }
+    // Growth rate is tracked but does not gate MSD evaluation.
+    // Stable feedback at GBF equilibrium (not growing) must still be detected.
 
     // Compute MSD (second derivative RMS) inline — no array allocations
     // Second derivative = d1[i] - d1[i-1] where d1[i] = ordered[i+1] - ordered[i]
@@ -1341,6 +1344,53 @@ export class FeedbackDetector {
     if (this.persistenceLastDb) this.persistenceLastDb[binIndex] = -200
   }
   
+  /**
+   * When signal gate closes, continue aging active peaks so they clear properly.
+   * Prevents ghost advisories from persisting during silence.
+   */
+  private _clearStalePeaksOnSilence(dt: number): void {
+    const active = this.active
+    const dead = this.deadMs
+    if (!active || !dead) return
+
+    for (let i = 0; i < active.length; i++) {
+      if (active[i] === 1) {
+        dead[i] += dt
+        if (dead[i] >= this.config.clearMs) {
+          const clearedHz = this.activeHz?.[i] ?? this.binToFrequency(i)
+
+          active[i] = 0
+          dead[i] = 0
+          if (this.holdMs) this.holdMs[i] = 0
+
+          // Remove from active list (swap-remove)
+          if (this.activeBins && this.activeBinPos) {
+            const pos = this.activeBinPos[i]
+            if (pos >= 0) {
+              const lastPos = this.activeCount - 1
+              if (lastPos >= 0) {
+                const lastBin = this.activeBins[lastPos]
+                this.activeBins[pos] = lastBin
+                this.activeBinPos[lastBin] = pos
+                this.activeCount = lastPos
+              }
+              this.activeBinPos[i] = -1
+            }
+          }
+          if (this.activeHz) this.activeHz[i] = 0
+
+          this.resetMsdForBin(i)
+
+          this.callbacks.onPeakCleared?.({
+            binIndex: i,
+            frequencyHz: clearedHz,
+            timestamp: performance.now(),
+          })
+        }
+      }
+    }
+  }
+
   // ==================== Persistence Scoring (Phase 2) ====================
   
   /**
