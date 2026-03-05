@@ -673,6 +673,11 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         else if (smoothedLabel === 'INSTRUMENT') classification.severity = 'INSTRUMENT'
       }
 
+      // Hard frequency floor — sub-bass/low-mid peaks are almost always room
+      // modes or stage rumble, not acoustic feedback.  Skip before classification
+      // gate to avoid unnecessary advisory churn.
+      if (track.trueFrequencyHz < 400) break
+
       // Gate on reporting threshold
       if (!shouldReportIssue(classification, settings)) {
         const existingId = trackToAdvisoryId.get(track.id)
