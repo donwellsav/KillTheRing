@@ -254,20 +254,22 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings, ac
   }
 
   // 10. Frequency band context — Schroeder room-mode penalty
-  // BUG FIX: Previously gated on `band === 'LOW' && freq < schroederHz`
-  // but getFrequencyBand() already sets band = 'LOW' for freq < max(schroederHz, 300 Hz).
-  // The redundant freq < schroederHz sub-condition caused the penalty to never
-  // fire in typical rooms where schroederHz ≤ 200 Hz.
-  //
   // PHYSICS (Hopkins §1.2.6): Below the Schroeder frequency individual room
   // modes dominate.  Modal density n(f) ≈ 4π f² V / c³ → very sparse below
-  // ~200 Hz.  A sharp peak in this range is far more likely to be a room mode
-  // than acoustic feedback.  Penalty increased to -0.25 (was -0.1).
+  // ~200 Hz.  A sharp peak in this range is more likely to be a room mode
+  // than acoustic feedback.
+  //
+  // Penalty reduced to -0.12 (was -0.25): the old value consumed 76% of the
+  // starting pFeedback budget (0.33), making it nearly impossible for low-freq
+  // feedback to reach the confidence threshold even with strong positive
+  // signals (high MSD, sustained growth, high Q).  The frequency-dependent
+  // prominence floor (up to 1.5× via modal density) and the LOW band
+  // multipliers (1.4× prominence, 1.5× sustain) already provide robust
+  // room-mode filtering without this severe a classifier penalty.
   if (freqBand.band === 'LOW') {
-    // Below Schroeder boundary: very likely a room mode, not feedback
-    pFeedback   -= 0.25
-    pInstrument += 0.10
-    reasons.push(`Below Schroeder boundary (${schroederFreq.toFixed(0)} Hz) — probable room mode`)
+    pFeedback   -= 0.12
+    pInstrument += 0.05
+    reasons.push(`Below Schroeder boundary (${schroederFreq.toFixed(0)} Hz) — possible room mode`)
   }
 
   // 10a. Room mode proximity — compare against calculated eigenfrequencies
@@ -429,10 +431,13 @@ export function shouldReportIssue(
   }
 
   // Frequency-dependent prominence floor — sparse modal regions need higher prominence
-  // Uses modal density n(f) to scale the 10 dB base floor (up to 1.5× in sparse regions)
+  // Uses the detector's prominenceDb setting as the base (not a hardcoded value) so the
+  // reporting gate stays in sync with the detection gate. Modal density scaling still
+  // applies (up to 1.5× in sparse regions) to filter room mode false positives.
   {
+    const baseProminence = settings.prominenceDb ?? 10
     const representativeFreq = classification.frequencyBand === 'LOW' ? 150 : classification.frequencyBand === 'HIGH' ? 6000 : 1000
-    const prominenceFloor = frequencyDependentProminence(10, representativeFreq, settings.roomVolume ?? 250)
+    const prominenceFloor = frequencyDependentProminence(baseProminence, representativeFreq, settings.roomVolume ?? 250)
     if (classification.prominenceDb !== undefined && classification.prominenceDb < prominenceFloor) {
       return false
     }
