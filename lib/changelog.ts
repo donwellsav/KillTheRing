@@ -14,6 +14,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.67',
+    date: '2026-03-05',
+    highlights: 'Pro convention EQ recommendations',
+    changes: [
+      { type: 'feat', description: 'Raised PEQ Q values to pro convention (surgical Q60, heavy Q30) matching dbx AFS standards' },
+      { type: 'feat', description: 'Added ERB-scaled cut depth — shallower cuts below 500 Hz to protect warmth, deeper above 2 kHz' },
+      { type: 'feat', description: 'Added PHPR (Peak-to-Harmonic Power Ratio) detection for feedback vs. music discrimination' },
+      { type: 'fix', description: 'Added bandwidth data to PEQ recommendations for future detail views' },
+    ],
+  },
+  {
     version: '1.0.66',
     date: '2026-03-05',
     highlights: 'Speech preset retune',
