@@ -161,14 +161,9 @@ function isHarmonicOfExisting(freqHz: number): boolean {
       }
     }
 
-    // B: Sub-harmonic check — is new peak a fundamental whose overtone already has an advisory?
-    if (existingHz > freqHz) {
-      for (let n = 2; n <= MAX_HARMONIC; n++) {
-        const harmonic = freqHz * n
-        const cents = Math.abs(1200 * Math.log2(existingHz / harmonic))
-        if (cents <= toleranceCents) return true
-      }
-    }
+    // B: Sub-harmonic check removed — if a fundamental appears after its overtone,
+    // the fundamental is the actual problem frequency and should NOT be suppressed.
+    // The overtone advisory will be replaced via frequency-proximity dedup if close enough.
   }
   return false
 }
@@ -569,16 +564,13 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         rmsDb = validBins > 0 ? 10 * Math.log10(sumLinearPower / validBins) : -100
         ampBuffer.addSample(specMax, rmsDb)
 
-        // Phase coherence: extract phase angles whenever any tracked peak exists.
-        // Phase data must be collected during early buildup (low velocity / low Q)
-        // so the classifier has coherence history when it needs to make a decision.
+        // Phase coherence: extract phase angles on EVERY frame unconditionally.
+        // Gaps in phase history corrupt frame-to-frame delta-phase calculations,
+        // so we collect even when no tracks exist to maintain continuous history.
         if (msg.timeDomain && phaseBuffer) {
-          const activeTracks = trackManager.getRawTracks()
-          if (activeTracks.length > 0) {
-            const phases = computePhaseAngles(msg.timeDomain)
-            if (phases) {
-              phaseBuffer.addFrame(phases)
-            }
+          const phases = computePhaseAngles(msg.timeDomain)
+          if (phases) {
+            phaseBuffer.addFrame(phases)
           }
         }
 
@@ -745,8 +737,9 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       let mergedClusterCount = 1
 
       if (!existingId) {
-        // Check -1: global rate limiter — max 1 new advisory per second
-        if (peak.timestamp - lastAdvisoryCreatedAt < ADVISORY_RATE_LIMIT_MS) {
+        // Check -1: global rate limiter — safety-critical severities bypass
+        if (peak.timestamp - lastAdvisoryCreatedAt < ADVISORY_RATE_LIMIT_MS
+            && classification.severity !== 'RUNAWAY' && classification.severity !== 'GROWING') {
           break
         }
 

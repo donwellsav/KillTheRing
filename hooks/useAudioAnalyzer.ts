@@ -119,12 +119,12 @@ export function useAudioAnalyzer(
       if (byId >= 0) {
         next[byId] = advisory
       } else {
-        // Frequency-proximity dedup (200 cents = 2 semitones, matches worker)
+        // Frequency-proximity dedup (100 cents = 1 semitone, matches worker)
         // Prevents duplicate cards when a peak is cleared then re-detected
         // with a new track/advisory ID at the same frequency.
         const byFreq = next.findIndex(a => {
           const cents = Math.abs(1200 * Math.log2(advisory.trueFrequencyHz / a.trueFrequencyHz))
-          return cents <= 200
+          return cents <= 100
         })
         if (byFreq >= 0) {
           next[byFreq] = advisory // Replace the old card
@@ -150,7 +150,12 @@ export function useAudioAnalyzer(
   // Stable callbacks object — created once, never triggers re-renders
   const stableCallbacks = useRef<DSPWorkerCallbacks>({
     onAdvisory: (advisory) => onAdvisoryRef.current(advisory),
-    onAdvisoryCleared: () => { /* Keep cards visible until next start */ },
+    onAdvisoryCleared: (advisoryId) => {
+      setState(prev => ({
+        ...prev,
+        advisories: prev.advisories.filter(a => a.id !== advisoryId),
+      }))
+    },
     onTracksUpdate: (tracks) => { tracksRef.current = tracks },
     onReady: () => { /* Worker ready */ },
   }).current

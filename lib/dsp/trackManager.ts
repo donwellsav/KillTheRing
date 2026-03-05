@@ -289,10 +289,24 @@ export class TrackManager {
     track.isPersistent = peak.isPersistent
     track.isHighlyPersistent = peak.isHighlyPersistent
     
-    // Calculate velocity (dB/sec) — clamp dt to avoid division by near-zero
-    const dt = Math.max((peak.timestamp - track.onsetTime) / 1000, MIN_VELOCITY_DT_SEC)
-    if (dt > MIN_VELOCITY_DT_SEC) {
-      track.velocityDbPerSec = (peak.trueAmplitudeDb - track.onsetDb) / dt
+    // Calculate velocity (dB/sec) from recent history window (~500ms)
+    // Uses recent slope instead of onset-to-now average to capture current growth rate
+    const VELOCITY_WINDOW_MS = 500
+    const now = peak.timestamp
+    const hist = track.history
+    if (hist.length >= 2) {
+      // Find the oldest entry within the velocity window
+      let windowStart = hist.length - 1
+      for (let j = hist.length - 2; j >= 0; j--) {
+        if (now - hist[j].time > VELOCITY_WINDOW_MS) break
+        windowStart = j
+      }
+      const oldest = hist[windowStart]
+      const newest = hist[hist.length - 1]
+      const dtSec = Math.max((newest.time - oldest.time) / 1000, MIN_VELOCITY_DT_SEC)
+      if (dtSec > MIN_VELOCITY_DT_SEC) {
+        track.velocityDbPerSec = (newest.ampDb - oldest.ampDb) / dtSec
+      }
     }
 
     // Extract features

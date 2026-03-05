@@ -662,7 +662,9 @@ export function classifyTrackWithAlgorithms(
   
   // Recalculate confidence
   const maxProb = Math.max(pFeedback, pWhistle, pInstrument)
-  const confidence = fusionResult ? fusionResult.confidence : Math.max(baseResult.confidence, maxProb)
+  const confidence = fusionResult
+    ? Math.max(fusionResult.confidence, baseResult.confidence, maxProb)
+    : Math.max(baseResult.confidence, maxProb)
   const pUnknown = 1 - confidence
   
   // Determine updated label and severity
