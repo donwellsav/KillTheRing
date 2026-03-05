@@ -566,14 +566,6 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p className="mt-1 text-muted-foreground">When algorithms disagree, confidence regresses toward 0.5 (maximum uncertainty).</p>
                   </div>
                   <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                    <p className="text-foreground font-semibold">Content-Aware Weights (7 algorithms)</p>
-                    <p>         [MSD,  Phase, Spec, Comb, IHR,  PTMR, Legacy]</p>
-                    <p>Default: [0.30, 0.25,  0.12, 0.08, 0.08, 0.07, 0.10]</p>
-                    <p>Speech:  [0.40, 0.20,  0.10, 0.05, 0.05, 0.10, 0.10]</p>
-                    <p>Music:   [0.15, 0.35,  0.10, 0.08, 0.12, 0.05, 0.15]</p>
-                    <p>Compr.:  [0.12, 0.38,  0.15, 0.08, 0.10, 0.07, 0.10]</p>
-                  </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
                     <p className="text-foreground font-semibold">Verdict Thresholds</p>
                     <p>FEEDBACK:     P ≥ 0.65 AND confidence ≥ 0.6</p>
                     <p>POSSIBLE:     P ≥ 0.46 AND confidence ≥ 0.4</p>
@@ -885,6 +877,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="text-sm text-muted-foreground leading-relaxed">
         {children}
       </div>
+    </div>
+  )
+}
+
+function FormulaBlock({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-muted p-3 rounded font-mono text-xs ${className ?? 'space-y-1'}`}>
+      <p className="text-foreground font-semibold">{title}</p>
+      {children}
     </div>
   )
 }
