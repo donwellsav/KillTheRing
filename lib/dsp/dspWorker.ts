@@ -307,10 +307,13 @@ function smoothClassificationLabel(
     return newLabel
   }
 
-  // Count occurrences of each label in the filled portion
+  // Count occurrences of each label in the most recent CLASSIFICATION_SMOOTHING_FRAMES only.
+  // ring.idx points to the NEXT write slot, so walk backwards from (idx - 1).
+  const cap = LABEL_HISTORY_CAPACITY
+  const windowSize = CLASSIFICATION_SMOOTHING_FRAMES
   const counts = new Map<string, number>()
-  for (let i = 0; i < ring.count; i++) {
-    const label = ring.labels[i]
+  for (let k = 0; k < windowSize; k++) {
+    const label = ring.labels[(ring.idx - 1 - k + cap) % cap]
     counts.set(label, (counts.get(label) ?? 0) + 1)
   }
 
@@ -560,14 +563,12 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         const rmsDb = validBins > 0 ? 10 * Math.log10(sumLinearPower / validBins) : -100
         ampBuffer.addSample(specMax, rmsDb)
 
-        // Phase coherence: conditionally extract phase angles via FFT
-        // Skip expensive O(N log N) computation unless a track shows feedback signatures
+        // Phase coherence: extract phase angles whenever any tracked peak exists.
+        // Phase data must be collected during early buildup (low velocity / low Q)
+        // so the classifier has coherence history when it needs to make a decision.
         if (msg.timeDomain && phaseBuffer) {
           const activeTracks = trackManager.getRawTracks()
-          const needsPhase = activeTracks.length > 0 && activeTracks.some(t =>
-            t.velocityDbPerSec > 3 || t.qEstimate > 30
-          )
-          if (needsPhase) {
+          if (activeTracks.length > 0) {
             const phases = computePhaseAngles(msg.timeDomain)
             if (phases) {
               phaseBuffer.addFrame(phases)
