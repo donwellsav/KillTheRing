@@ -321,7 +321,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <span className="text-xl font-black tracking-tight text-primary">RING</span>
               </div>
               <span className="text-[0.625rem] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
-                Don Wells AV
+                Don Wells AV{' '}
+                <span className="font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}</span>
               </span>
             </div>
           </div>
@@ -334,7 +335,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <span className="text-xl font-black tracking-tight text-primary">RING</span>
               </div>
               <span className="text-[0.625rem] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
-                Don Wells AV
+                Don Wells AV{' '}
+                <span className="font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}</span>
               </span>
             </div>
           </div>
