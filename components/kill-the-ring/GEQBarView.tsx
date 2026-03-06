@@ -27,7 +27,6 @@ export const GEQBarView = memo(function GEQBarView({ advisories, graphFontSize =
   const bandRecommendations = useMemo(() => {
     const map = new Map<number, { suggestedDb: number; color: string; freq: number; clusterCount: number }>()
     for (const advisory of advisories) {
-      if (advisory.resolved) continue
       if (!advisory.advisory?.geq) continue
       const bandIndex = advisory.advisory.geq.bandIndex
       const existing = map.get(bandIndex)
