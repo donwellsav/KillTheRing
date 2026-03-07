@@ -22,7 +22,7 @@ import { AlgorithmStatusBar } from './AlgorithmStatusBar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useFullscreen } from '@/hooks/useFullscreen'
-import { RotateCcw, LayoutGrid, AlertTriangle, BarChart3, Settings2, ClipboardList, Maximize2, Minimize2, PanelRightOpen, PanelLeftClose } from 'lucide-react'
+import { RotateCcw, LayoutGrid, AlertTriangle, BarChart3, Settings2, ClipboardList, Maximize2, Minimize2, PanelLeftClose, Columns2 } from 'lucide-react'
 import type { Advisory, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
@@ -90,6 +90,11 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [layoutKey, setLayoutKey] = useState(0)
   const [issuesPanelOpen, setIssuesPanelOpen] = useState(false)
   const issuesPanelRef = useRef<ImperativePanelHandle>(null)
+
+  // Force-collapse issues panel on mount to override localStorage-restored size
+  useEffect(() => {
+    requestAnimationFrame(() => issuesPanelRef.current?.collapse())
+  }, [])
 
   // Fullscreen
   const rootRef = useRef<HTMLDivElement>(null)
@@ -663,6 +668,25 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                   >
                     Controls
                   </button>
+                  {/* Split-view toggle */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={issuesPanelOpen ? closeIssuesPanel : openIssuesPanel}
+                        className={`flex-shrink-0 px-2 py-1.5 transition-colors ${
+                          issuesPanelOpen
+                            ? 'text-primary'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        aria-label={issuesPanelOpen ? 'Close issues sidecar' : 'Open issues sidecar'}
+                      >
+                        <Columns2 className="w-3.5 h-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      {issuesPanelOpen ? 'Close split view' : 'Split: Issues'}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <div className="flex-1 overflow-y-auto p-3">
@@ -688,25 +712,12 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                       <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
                     )}
                   </div>
-                  {/* Sticky trigger button at bottom of Controls tab */}
-                  {activeSidebarTab === 'controls' && !issuesPanelOpen && (
-                    <div className="flex-shrink-0 border-t border-border p-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={openIssuesPanel}
-                        className="w-full h-8 text-[0.625rem] font-medium gap-1.5"
-                      >
-                        <PanelRightOpen className="w-3.5 h-3.5" />
-                        Controls &amp; Issues
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </div>
             </ResizablePanel>
 
-            <ResizableHandle withHandle />
+            {/* Only show handle when issues panel is open — prevents accidental drag-expand */}
+            {issuesPanelOpen && <ResizableHandle withHandle />}
 
             {/* Issues side-panel (collapsible, between sidebar and graphs) */}
             <ResizablePanel
