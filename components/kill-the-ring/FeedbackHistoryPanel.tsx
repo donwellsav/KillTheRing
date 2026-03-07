@@ -81,8 +81,8 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-12 w-12 sm:h-8 sm:w-8" title="Feedback History">
-          <History className="h-6 w-6 sm:h-4 sm:w-4" />
+        <Button variant="ghost" size="icon" className="h-14 w-14 sm:h-8 sm:w-8" title="Feedback History">
+          <History className="h-7 w-7 sm:h-4 sm:w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full sm:w-[400px] lg:w-[540px] bg-background border-border">

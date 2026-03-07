@@ -302,7 +302,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       {/* ── Header ─────────────────────────────────────────────── */}
       {/* Mobile: two-row stacked layout with full-height circle button */}
       {/* Desktop (sm:): single-row layout, logo left, actions right    */}
-      <header className="relative flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm sm:px-4 sm:py-2 sm:gap-4">
+      <header className="relative flex items-center justify-between gap-2 px-3 py-3 border-b border-border bg-card/80 backdrop-blur-sm sm:px-4 sm:py-2 sm:gap-4">
 
         {/* ── MOBILE Row 1: Logo wordmark (right-aligned, above icons) ── */}
         {/* ── DESKTOP: Logo + button group (left side) ───────────────── */}
@@ -344,30 +344,30 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
 
           {/* Mobile-only: inline start button + wordmark */}
-          <div className="flex sm:hidden items-center gap-2.5">
+          <div className="flex sm:hidden items-center gap-3 min-w-0">
             <button
               onClick={isRunning ? stop : start}
               aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-              className="relative w-14 h-14 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+              className="relative w-16 h-16 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
             >
-              <div className={`absolute inset-2 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+              <div className={`absolute inset-2.5 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
               {isRunning && (
-                <div className="absolute inset-2 rounded-full border-2 border-primary animate-ping opacity-30" />
+                <div className="absolute inset-2.5 rounded-full border-2 border-primary animate-ping opacity-30" />
               )}
               <svg
-                className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                className={`w-8 h-8 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
               </svg>
             </button>
-            <div className="flex flex-col justify-center gap-0">
+            <div className="flex flex-col justify-center gap-0 min-w-0">
               <div className="flex items-baseline gap-1 leading-none">
-                <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
-                <span className="text-xl font-black tracking-tight text-primary">RING</span>
+                <span className="text-xl font-black tracking-tight text-foreground">KILL THE</span>
+                <span className="text-2xl font-black tracking-tight text-primary">RING</span>
               </div>
-              <span className="text-[0.625rem] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+              <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase leading-none">
                 Don Wells AV{' '}
                 <span className="font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}</span>
               </span>
@@ -393,7 +393,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
         {/* ── MOBILE Row 2: Action icons ───────────────────────────── */}
         {/* ── DESKTOP: Action icons (right side) ──────────────────── */}
-        <div className="flex items-center justify-end gap-1 sm:gap-2 sm:px-0 text-xs text-muted-foreground sm:flex-shrink-0">
+        <div className="flex items-center justify-end gap-2 sm:gap-2 sm:px-0 text-xs text-muted-foreground sm:flex-shrink-0">
           {noiseFloorDb !== null && (
             <span className="font-mono text-[0.5625rem] sm:text-[0.625rem] hidden landscape:inline mr-auto sm:mr-0">
               Floor: {noiseFloorDb.toFixed(0)}dB
