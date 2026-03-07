@@ -309,7 +309,7 @@ export interface DetectorSettings {
   inputGainDb: number // Software gain applied to analysis (-40 to +40 dB)
   autoGainEnabled: boolean // Auto-adjust inputGainDb based on signal level
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
-  harmonicToleranceCents: number // Cents window for harmonic/sub-harmonic matching (25–100, default 50)
+  harmonicToleranceCents: number // Cents window for harmonic/sub-harmonic matching (25–400, default 200)
   showTooltips: boolean // Show/hide all help tooltips throughout the UI
   aWeightingEnabled: boolean // Apply A-weighting curve to analysis (per IEC 61672-1)
   // Confidence and filtering

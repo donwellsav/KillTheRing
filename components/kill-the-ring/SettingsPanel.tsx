@@ -500,7 +500,7 @@ export const SettingsPanel = memo(function SettingsPanel({
               <Section
                 title="Harmonic Tolerance"
                 showTooltip={settings.showTooltips}
-                tooltip="Cents window for harmonic/sub-harmonic matching. 25-35 cents for ring out, 65-100 cents for live with reverb."
+                tooltip="Cents window for harmonic/sub-harmonic matching. 25-50 cents for ring out, 100-200 cents for live with reverb, 300+ for highly reverberant rooms."
               >
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
@@ -510,7 +510,7 @@ export const SettingsPanel = memo(function SettingsPanel({
                   <Slider
                     value={[settings.harmonicToleranceCents]}
                     onValueChange={([v]) => onSettingsChange({ harmonicToleranceCents: v })}
-                    min={25} max={100} step={5}
+                    min={25} max={400} step={25}
                   />
                   <div className="flex justify-between text-[0.5625rem] text-muted-foreground">
                     <span>Tight (ring out)</span><span>Wide (live)</span>

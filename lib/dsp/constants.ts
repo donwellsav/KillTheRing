@@ -249,7 +249,7 @@ export const TRACK_SETTINGS = {
 // Harmonic detection settings
 export const HARMONIC_SETTINGS = {
   MAX_HARMONIC: 8, // Check overtones up to this partial (2nd–8th)
-  TOLERANCE_CENTS: 100, // ±100 cents = 1 semitone; synced with ASSOCIATION_TOLERANCE_CENTS
+  TOLERANCE_CENTS: 200, // ±200 cents = whole tone; synced with ASSOCIATION_TOLERANCE_CENTS
   // Sub-harmonic check: if new peak F and an active track is near F*k, new peak may be the fundamental
   CHECK_SUB_HARMONICS: true,
 } as const
@@ -575,7 +575,7 @@ export const DEFAULT_SETTINGS = {
   inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
   autoGainEnabled: true, // Auto-gain on by default — finds optimal level for any venue
   graphFontSize: 15, // Default label size for canvas graphs (8–26 px)
-  harmonicToleranceCents: 100, // ±100 cents for harmonic matching; synced with ASSOCIATION_TOLERANCE_CENTS
+  harmonicToleranceCents: 200, // ±200 cents for harmonic matching; synced with ASSOCIATION_TOLERANCE_CENTS
   showTooltips: true, // Show help tooltips (useful for AV techs)
   aWeightingEnabled: true, // A-WEIGHTING ON — prioritizes speech intelligibility band (2–5 kHz)
   // Confidence filtering — catches early quiet feedback while filtering noise

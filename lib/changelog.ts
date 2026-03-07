@@ -14,6 +14,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.105',
+    date: '2026-03-07',
+    changes: [
+      { type: 'feat', description: '**Widened harmonic tolerance**: Range expanded from 25-100 to 25-400 cents, default raised to 200 cents for better reverberant room support' },
+    ],
+  },
+  {
     version: '1.0.104',
     date: '2026-03-06',
     changes: [
