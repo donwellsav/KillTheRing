@@ -532,36 +532,6 @@ export function calculateCalibratedConfidence(
   }
 }
 
-/**
- * Apply frequency-dependent threshold multipliers
- * Adjusts detection thresholds based on frequency band
- * 
- * @param baseThreshold - Base threshold value
- * @param frequencyHz - Frequency being analyzed
- * @param schroederHz - Schroeder frequency
- * @param thresholdType - Which type of threshold to adjust
- * @returns Adjusted threshold
- */
-export function applyFrequencyDependentThreshold(
-  baseThreshold: number,
-  frequencyHz: number,
-  schroederHz: number,
-  thresholdType: 'prominence' | 'sustain' | 'q'
-): number {
-  const band = getFrequencyBand(frequencyHz, schroederHz)
-
-  switch (thresholdType) {
-    case 'prominence':
-      return baseThreshold * band.prominenceMultiplier
-    case 'sustain':
-      return baseThreshold * band.sustainMultiplier
-    case 'q':
-      return baseThreshold * band.qThresholdMultiplier
-    default:
-      return baseThreshold
-  }
-}
-
 // ============================================================================
 // UNIT CONVERSIONS
 // ============================================================================
