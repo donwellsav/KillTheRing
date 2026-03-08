@@ -6,12 +6,12 @@
 import { useState, memo } from 'react'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Accordion,
@@ -34,17 +34,17 @@ export const HelpMenu = memo(function HelpMenu() {
   const [open, setOpen] = useState(false)
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         <Button suppressHydrationWarning variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground h-14 w-14 p-0 sm:h-auto sm:w-auto sm:px-3" aria-label="Help">
           <HelpCircle className="w-7 h-7 sm:w-4 sm:h-4" />
           <span className="hidden sm:inline text-xs">Help</span>
         </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold tracking-tight">Kill The Ring Help</DialogTitle>
-        </DialogHeader>
+      </SheetTrigger>
+      <SheetContent side="right" className="sm:max-w-xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="text-lg font-bold tracking-tight">Kill The Ring Help</SheetTitle>
+        </SheetHeader>
 
         <Tabs defaultValue="guide" className="mt-4">
           <TabsList className="grid w-full grid-cols-5">
@@ -876,8 +876,8 @@ export const HelpMenu = memo(function HelpMenu() {
             </div>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 })
 
