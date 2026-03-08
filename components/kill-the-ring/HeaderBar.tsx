@@ -1,0 +1,210 @@
+'use client'
+
+import { memo } from 'react'
+import { InputMeterSlider } from './InputMeterSlider'
+import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
+import { HelpMenu } from './HelpMenu'
+import { SettingsPanel } from './SettingsPanel'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { LayoutGrid, Maximize2, Minimize2, Pause, Play } from 'lucide-react'
+import type { OperationMode, DetectorSettings } from '@/types/advisory'
+
+interface HeaderBarProps {
+  isRunning: boolean
+  start: () => void
+  stop: () => void
+  settings: DetectorSettings
+  onSettingsChange: (s: Partial<DetectorSettings>) => void
+  onModeChange: (mode: OperationMode) => void
+  onReset: () => void
+  noiseFloorDb: number | null
+  inputLevel: number
+  isAutoGain: boolean
+  autoGainDb: number | undefined
+  autoGainLocked: boolean
+  resetLayout: () => void
+  isFullscreen: boolean
+  toggleFullscreen: () => void
+  isFrozen: boolean
+  toggleFreeze: () => void
+}
+
+export const HeaderBar = memo(function HeaderBar({
+  isRunning, start, stop,
+  settings, onSettingsChange, onModeChange, onReset,
+  noiseFloorDb, inputLevel,
+  isAutoGain, autoGainDb, autoGainLocked,
+  resetLayout, isFullscreen, toggleFullscreen,
+  isFrozen, toggleFreeze,
+}: HeaderBarProps) {
+  return (
+    <header className="relative flex items-center justify-between gap-2 px-3 py-3 border-b border-border bg-card/80 backdrop-blur-sm sm:px-4 sm:py-2 sm:gap-4">
+
+      {/* ── DESKTOP: Logo + button group (left side) ───────────────── */}
+      <div className="flex items-center gap-1.5 sm:gap-3 sm:flex-shrink-0">
+
+        {/* Desktop-only: button inside logo group */}
+        <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
+          <div className="relative">
+            <button
+              onClick={isRunning ? stop : start}
+              aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+              className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+            >
+              <div className={`absolute inset-1 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+              {isRunning && (
+                <div className="absolute inset-1 rounded-full border-2 border-primary animate-ping opacity-30" />
+              )}
+              <svg
+                className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex flex-col justify-center gap-[3px]">
+            <div className="flex items-baseline gap-1.5 leading-none">
+              <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
+              <span className="text-xl font-black tracking-tight text-primary">RING</span>
+            </div>
+            <span className="text-[0.625rem] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+              Don Wells AV{' '}
+              <span className="font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Mobile-only: inline start button + wordmark */}
+        <div className="flex sm:hidden items-center gap-3 min-w-0">
+          <button
+            onClick={isRunning ? stop : start}
+            aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+            className="relative w-16 h-16 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+          >
+            <div className={`absolute inset-2.5 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+            {isRunning && (
+              <div className="absolute inset-2.5 rounded-full border-2 border-primary animate-ping opacity-30" />
+            )}
+            <svg
+              className={`w-8 h-8 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+          </button>
+          <div className="flex flex-col justify-center gap-0 min-w-0">
+            <div className="flex items-baseline gap-1 leading-none">
+              <span className="text-xl font-black tracking-tight text-foreground">KILL THE</span>
+              <span className="text-2xl font-black tracking-tight text-primary">RING</span>
+            </div>
+            <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+              Don Wells AV{' '}
+              <span className="font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop center: Gain slider */}
+      <div className="hidden landscape:sm:flex items-center flex-1 min-w-0">
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          <InputMeterSlider
+            value={settings.inputGainDb}
+            onChange={(v) => onSettingsChange({ inputGainDb: v })}
+            level={inputLevel}
+            fullWidth
+            autoGainEnabled={isAutoGain}
+            autoGainDb={autoGainDb}
+            autoGainLocked={autoGainLocked}
+            onAutoGainToggle={(enabled) => onSettingsChange({ autoGainEnabled: enabled })}
+          />
+        </div>
+      </div>
+
+      {/* ── Action icons (right side) ──────────────────── */}
+      <div className="flex items-center justify-end gap-2 sm:gap-2 sm:px-0 text-xs text-muted-foreground sm:flex-shrink-0">
+        {noiseFloorDb !== null && (
+          <span className="font-mono text-[0.5625rem] sm:text-[0.625rem] hidden landscape:inline mr-auto sm:mr-0">
+            Floor: {noiseFloorDb.toFixed(0)}dB
+          </span>
+        )}
+
+        <TooltipProvider delayDuration={400}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetLayout}
+                className="hidden landscape:flex h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                aria-label="Reset layout"
+              >
+                <LayoutGrid className="w-3 h-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              Reset layout
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider delayDuration={400}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="hidden landscape:flex h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                aria-label="Toggle fullscreen"
+              >
+                {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {isRunning && (
+          <TooltipProvider delayDuration={400}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleFreeze}
+                  className={`hidden landscape:flex h-6 w-6 p-0 ${
+                    isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  aria-label={isFrozen ? 'Unfreeze spectrum' : 'Freeze spectrum'}
+                  aria-pressed={isFrozen}
+                >
+                  {isFrozen ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {isFrozen ? 'Unfreeze (P)' : 'Freeze display (P)'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        <FeedbackHistoryPanel />
+        <HelpMenu />
+        <SettingsPanel
+          settings={settings}
+          onSettingsChange={onSettingsChange}
+          onModeChange={onModeChange}
+          onReset={onReset}
+        />
+      </div>
+    </header>
+  )
+})

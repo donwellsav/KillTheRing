@@ -236,7 +236,7 @@ export const SettingsPanel = memo(function SettingsPanel({
         }
         onSettingsChange(defaults)
       } catch {
-        alert('Failed to load saved defaults')
+        console.error('Failed to load saved defaults from localStorage')
       }
     }
   }

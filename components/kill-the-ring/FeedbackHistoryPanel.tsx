@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { History, Download, Trash2, AlertTriangle, TrendingUp, BarChart3 } from 'lucide-react'
 import { getFeedbackHistory, type FrequencyHotspot } from '@/lib/dsp/feedbackHistory'
 
@@ -56,12 +57,9 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
     setTimeout(() => URL.revokeObjectURL(url), 60_000)
   }, [])
 
-  // TODO: Replace native confirm() with AlertDialog for UI consistency (see ResetConfirmDialog pattern)
   const handleClear = useCallback(() => {
-    if (confirm('Clear all feedback history? This cannot be undone.')) {
-      getFeedbackHistory().clear()
-      refreshData()
-    }
+    getFeedbackHistory().clear()
+    refreshData()
   }, [refreshData])
 
   const formatFrequency = (hz: number) => {
@@ -182,15 +180,30 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
               <Download className="h-3 w-3 mr-1" />
               JSON
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              className="text-muted-foreground/50 hover:text-destructive"
-              disabled={hotspots.length === 0}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground/50 hover:text-destructive"
+                  disabled={hotspots.length === 0}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogTitle>Clear feedback history?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove all recorded feedback events and hotspot data. This cannot be undone.
+                </AlertDialogDescription>
+                <div className="flex items-center gap-3 justify-end">
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClear} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Clear
+                  </AlertDialogAction>
+                </div>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SheetContent>

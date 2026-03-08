@@ -38,13 +38,6 @@
       "description": "Open the feedback detector",
       "url": "/",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Session History",
-      "short_name": "History",
-      "description": "View past sessions",
-      "url": "/sessions",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

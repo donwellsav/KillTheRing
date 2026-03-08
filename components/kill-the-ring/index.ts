@@ -12,3 +12,6 @@ export { FeedbackHistoryPanel } from "./FeedbackHistoryPanel";
 export { FullscreenOverlay } from "./FullscreenOverlay";
 export { AlgorithmStatusBar } from "./AlgorithmStatusBar";
 export { ErrorBoundary } from "./ErrorBoundary";
+export { HeaderBar } from "./HeaderBar";
+export { MobileLayout } from "./MobileLayout";
+export { DesktopLayout } from "./DesktopLayout";

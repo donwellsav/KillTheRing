@@ -693,6 +693,17 @@ export const HelpMenu = memo(function HelpMenu() {
               TAB 4: REFERENCE
               ═══════════════════════════════════════════════════════════════ */}
           <TabsContent value="reference" className="mt-4 space-y-4">
+            <Section title="Keyboard Shortcuts">
+              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-[0.65rem]">Space</kbd><span>Start / stop analysis</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-[0.65rem]">P</kbd><span>Freeze / unfreeze spectrum display</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-[0.65rem]">F</kbd><span>Toggle fullscreen</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-[0.65rem]">1</kbd><span>Switch to RTA view</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-[0.65rem]">2</kbd><span>Switch to GEQ view</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-[0.65rem]">3</kbd><span>Switch to Controls view</span>
+              </div>
+            </Section>
+
             <Section title="Severity Levels">
               <ul className="space-y-2">
                 <li><strong className="text-red-500">RUNAWAY:</strong> Active feedback rapidly increasing — address immediately</li>
