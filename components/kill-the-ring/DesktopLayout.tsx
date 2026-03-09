@@ -54,6 +54,8 @@ interface DesktopLayoutProps {
   isAutoGain: boolean
   autoGainDb: number | undefined
   autoGainLocked: boolean
+  actualFps?: number
+  droppedPercent?: number
 }
 
 export const DesktopLayout = memo(function DesktopLayout({
@@ -69,6 +71,7 @@ export const DesktopLayout = memo(function DesktopLayout({
   hasActiveRTAMarkers, hasActiveGEQBars,
   onClearRTA, onClearGEQ, onFreqRangeChange,
   inputLevel, isAutoGain, autoGainDb, autoGainLocked,
+  actualFps, droppedPercent,
 }: DesktopLayoutProps) {
   return (
     <div className="hidden landscape:flex flex-1 overflow-hidden">
@@ -86,6 +89,8 @@ export const DesktopLayout = memo(function DesktopLayout({
                 compressionRatio={spectrumStatus?.compressionRatio}
                 isRunning={isRunning}
                 showDetailed={settings.showAlgorithmScores}
+                actualFps={actualFps}
+                droppedPercent={droppedPercent}
               />
             </div>
             {/* Sidebar tab bar */}

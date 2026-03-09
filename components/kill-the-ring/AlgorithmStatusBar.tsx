@@ -18,6 +18,8 @@ interface AlgorithmStatusBarProps {
   compressionRatio?: number
   isRunning: boolean
   showDetailed?: boolean
+  actualFps?: number
+  droppedPercent?: number
 }
 
 const ALGORITHM_MODE_LABELS: Record<AlgorithmMode, string> = {
@@ -44,6 +46,8 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
   compressionRatio = 1,
   isRunning,
   showDetailed = false,
+  actualFps = 0,
+  droppedPercent = 0,
 }: AlgorithmStatusBarProps) {
   const contentInfo = CONTENT_TYPE_LABELS[contentType]
   const msdReady = msdFrameCount >= 7 // Minimum for speech per DAFx paper
@@ -160,6 +164,37 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
                 </p>
                 <p className="text-xs text-muted-foreground/70 mt-1">
                   Thresholds automatically adjusted to reduce false positives from sustained notes.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </>
+        )}
+
+        {/* FPS Indicator — right-aligned */}
+        {actualFps > 0 && (
+          <>
+            <span className="ml-auto" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={`tabular-nums ${
+                  droppedPercent > 20 ? 'text-red-400' : droppedPercent > 5 ? 'text-amber-400' : 'text-muted-foreground/50'
+                }`}>
+                  {actualFps}fps
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+                <p className="font-semibold">Rendering: {actualFps} fps</p>
+                {droppedPercent > 0 && (
+                  <p className={`mt-1 ${droppedPercent > 20 ? 'text-red-400' : 'text-amber-400'}`}>
+                    {droppedPercent}% frames dropped
+                  </p>
+                )}
+                <p className="text-muted-foreground mt-1">
+                  {droppedPercent > 20
+                    ? 'Severe drops — try reducing FFT size or closing other tabs'
+                    : droppedPercent > 5
+                      ? 'Some frame drops detected'
+                      : 'Rendering smoothly'}
                 </p>
               </TooltipContent>
             </Tooltip>

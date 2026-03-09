@@ -5,6 +5,7 @@ import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAudioDevices } from '@/hooks/useAudioDevices'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { useFullscreen } from '@/hooks/useFullscreen'
+import { useFpsMonitor } from '@/hooks/useFpsMonitor'
 import { HeaderBar } from './HeaderBar'
 import { MobileLayout } from './MobileLayout'
 import { DesktopLayout } from './DesktopLayout'
@@ -48,6 +49,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   } = useAudioAnalyzer()
 
   const { devices, selectedDeviceId, setSelectedDeviceId } = useAudioDevices()
+  const { actualFps, droppedPercent } = useFpsMonitor(isRunning, settings.canvasTargetFps)
 
   const activeAdvisoryCount = useMemo(
     () => advisories.filter(a => !a.resolved).length,
@@ -390,6 +392,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         isAutoGain={isAutoGain}
         autoGainDb={autoGainDb}
         autoGainLocked={isAutoGainLocked}
+        actualFps={actualFps}
+        droppedPercent={droppedPercent}
       />
 
       <OnboardingOverlay />
