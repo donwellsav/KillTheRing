@@ -41,6 +41,8 @@ export interface DSPWorkerHandle {
   isReady: boolean
   /** True if the worker crashed and needs re-initialization */
   isCrashed: boolean
+  /** Get frame drop stats from backpressure */
+  getBackpressureStats: () => { dropped: number; total: number; ratio: number }
   /** Send initial config to the worker */
   init: (settings: DetectorSettings, sampleRate: number, fftSize: number) => void
   /** Push updated settings to the worker */
@@ -69,6 +71,8 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
   const isReadyRef = useRef(false)
   const busyRef = useRef(false)     // Backpressure: true while worker processes a peak batch
   const crashedRef = useRef(false)  // Set on unrecoverable worker error
+  const droppedFramesRef = useRef(0) // Frames skipped due to backpressure
+  const totalFramesRef = useRef(0)   // Total frames attempted
   const callbacksRef = useRef(callbacks)
 
   // Buffer pool: reusable Float32Arrays for zero-allocation worker transfer
@@ -178,7 +182,11 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
   const processPeak = useCallback(
     (peak: DetectedPeak, spectrum: Float32Array, sampleRate: number, fftSize: number, timeDomain?: Float32Array) => {
       // Backpressure: skip if worker hasn't finished the previous batch
-      if (busyRef.current || crashedRef.current || !isReadyRef.current) return
+      totalFramesRef.current++
+      if (busyRef.current || crashedRef.current || !isReadyRef.current) {
+        droppedFramesRef.current++
+        return
+      }
 
       // Flush pool when FFT size changes (buffers are wrong length)
       if (poolFftSizeRef.current !== fftSize) {
@@ -223,6 +231,8 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
 
   const reset = useCallback(() => {
     busyRef.current = false
+    droppedFramesRef.current = 0
+    totalFramesRef.current = 0
     postMessage({ type: 'reset' })
   }, [postMessage])
 
@@ -236,6 +246,11 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
   return {
     get isReady() { return isReadyRef.current },
     get isCrashed() { return crashedRef.current },
+    getBackpressureStats: () => ({
+      dropped: droppedFramesRef.current,
+      total: totalFramesRef.current,
+      ratio: totalFramesRef.current > 0 ? droppedFramesRef.current / totalFramesRef.current : 0,
+    }),
     init,
     updateSettings,
     processPeak,

@@ -131,6 +131,9 @@ function drawIndicatorLines(
   }
 }
 
+// Peak hold decay rate: ~0.5 dB per frame at 60fps (~30 dB/sec)
+const PEAK_HOLD_DECAY_DB = 0.5
+
 function drawSpectrum(
   ctx: CanvasRenderingContext2D,
   plotWidth: number,
@@ -140,12 +143,25 @@ function drawSpectrum(
   gradientRef: React.RefObject<CanvasGradient | null>,
   gradientHeightRef: React.RefObject<number>,
   spectrumLineWidth: number,
+  peakHoldRef: React.MutableRefObject<Float32Array | null>,
 ) {
   if (!spectrum?.freqDb || !spectrum.sampleRate || !spectrum.fftSize) return
 
   const freqDb = spectrum.freqDb
   const hzPerBin = spectrum.sampleRate / spectrum.fftSize
   const n = freqDb.length
+
+  // ── Update peak hold buffer ──────────────────────────────────
+  let peakHold = peakHoldRef.current
+  if (!peakHold || peakHold.length !== n) {
+    peakHold = new Float32Array(n)
+    peakHold.set(freqDb) // Initialize to current spectrum
+    peakHoldRef.current = peakHold
+  } else {
+    for (let i = 0; i < n; i++) {
+      peakHold[i] = Math.max(freqDb[i], peakHold[i] - PEAK_HOLD_DECAY_DB)
+    }
+  }
 
   // Cached gradient fill — only recreated when plotHeight changes
   let gradient = gradientRef.current
@@ -202,6 +218,28 @@ function drawSpectrum(
   ctx.globalAlpha = 1
   ctx.lineWidth = spectrumLineWidth
   ctx.stroke(strokePath)
+
+  // ── Peak hold trace — thin white line above spectrum ──────────
+  const holdPath = new Path2D()
+  let holdStarted = false
+  for (let i = 1; i < n; i++) {
+    const freq = i * hzPerBin
+    if (freq < range.freqMin || freq > range.freqMax) continue
+
+    const x = freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+    const db = clamp(peakHold[i], range.dbMin, range.dbMax)
+    const y = ((range.dbMax - db) / (range.dbMax - range.dbMin)) * plotHeight
+
+    if (!holdStarted) {
+      holdPath.moveTo(x, y)
+      holdStarted = true
+    } else {
+      holdPath.lineTo(x, y)
+    }
+  }
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'
+  ctx.lineWidth = 1
+  ctx.stroke(holdPath)
 }
 
 function drawFreqRangeOverlay(
@@ -502,6 +540,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
     freqRangeRef.current = { min: minFrequency, max: maxFrequency }
   }, [minFrequency, maxFrequency])
 
+
   // Drag state
   const dragRef = useRef<'min' | 'max' | null>(null)
   const paddingRef = useRef({ left: 0, top: 0, plotWidth: 0, plotHeight: 0 })
@@ -532,6 +571,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
   const dprRef = useRef(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)
   const gradientRef = useRef<CanvasGradient | null>(null)
   const gradientHeightRef = useRef(0)
+  const peakHoldRef = useRef<Float32Array | null>(null)
 
   // Dirty-bit: skip canvas redraw when nothing has changed
   const lastSpectrumRef = useRef<SpectrumData | null>(null)
@@ -630,7 +670,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
 
     drawGrid(ctx, plotWidth, plotHeight, range)
     drawIndicatorLines(ctx, plotWidth, plotHeight, range, spectrum, showThresholdLine, feedbackThresholdDb, fontSize)
-    drawSpectrum(ctx, plotWidth, plotHeight, range, spectrum, gradientRef, gradientHeightRef, spectrumLineWidthProp ?? 1.5)
+    drawSpectrum(ctx, plotWidth, plotHeight, range, spectrum, gradientRef, gradientHeightRef, spectrumLineWidthProp ?? 1.5, peakHoldRef)
 
     // Store padding for pointer event calculations
     paddingRef.current = { left: padding.left, top: padding.top, plotWidth, plotHeight }
@@ -764,8 +804,43 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
     }
   }, [onFreqRangeChange])
 
+  // Keyboard handler for freq range adjustment (a11y: arrow keys)
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!onFreqRangeChangeRef.current) return
+    const step = 50 // Hz per keystroke
+    const range = freqRangeRef.current
+
+    // Arrow keys = low handle, Shift+Arrow = high handle
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault()
+      const delta = e.key === 'ArrowRight' ? step : -step
+
+      if (e.shiftKey) {
+        const newMax = clamp(range.max + delta, range.min + step, CANVAS_SETTINGS.RTA_FREQ_MAX)
+        freqRangeRef.current = { min: range.min, max: newMax }
+        onFreqRangeChangeRef.current(range.min, newMax)
+      } else {
+        const newMin = clamp(range.min + delta, CANVAS_SETTINGS.RTA_FREQ_MIN, range.max - step)
+        freqRangeRef.current = { min: newMin, max: range.max }
+        onFreqRangeChangeRef.current(newMin, range.max)
+      }
+      dirtyRef.current = true
+    }
+  }, [])
+
   return (
-    <div ref={containerRef} className="relative w-full h-full">
+    <div
+      ref={containerRef}
+      className="relative w-full h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
+      tabIndex={onFreqRangeChange ? 0 : undefined}
+      role={onFreqRangeChange ? 'slider' : undefined}
+      aria-label={onFreqRangeChange ? 'Frequency range selector' : undefined}
+      aria-valuemin={onFreqRangeChange ? CANVAS_SETTINGS.RTA_FREQ_MIN : undefined}
+      aria-valuemax={onFreqRangeChange ? CANVAS_SETTINGS.RTA_FREQ_MAX : undefined}
+      aria-valuenow={onFreqRangeChange ? minFrequency : undefined}
+      aria-valuetext={onFreqRangeChange ? `${minFrequency} Hz to ${maxFrequency} Hz` : undefined}
+      onKeyDown={onFreqRangeChange ? handleKeyDown : undefined}
+    >
       <canvas ref={canvasRef} className="w-full h-full" role="img" aria-label="Real-time audio frequency spectrum display" />
       {showPlaceholder && (
         <div className="absolute inset-0">
