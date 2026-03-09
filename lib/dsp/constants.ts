@@ -610,6 +610,7 @@ export const DEFAULT_SETTINGS = {
   spectrumLineWidth: 1.5,
   showThresholdLine: true,
   canvasTargetFps: 30, // 30 fps halves GPU/CPU canvas work vs 60 fps; no perceptible quality loss
+  quickControlsMode: true, // Default to simplified controls for less overwhelming UX
 }
 
 // Room size presets — covers common professional venue types

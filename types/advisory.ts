@@ -350,6 +350,7 @@ export interface DetectorSettings {
   spectrumLineWidth: number // RTA line width in pixels (0.5-4, default 1.5)
   showThresholdLine: boolean // Show effective threshold line on RTA graph
   canvasTargetFps: number // Target FPS for canvas rendering (15-60, default 30)
+  quickControlsMode: boolean // Show simplified controls (true) or full controls (false)
 }
 
 // Default configuration - optimized for Corporate/Conference PA (Speech mode)

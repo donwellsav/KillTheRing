@@ -1,13 +1,48 @@
 'use client'
 
-import React, { memo, useCallback } from 'react'
-import { HelpCircle } from 'lucide-react'
+import React, { memo, useCallback, useState, useMemo } from 'react'
+import { HelpCircle, Save, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DetectorSettings, OperationMode, AlgorithmMode, Algorithm } from '@/types/advisory'
 import { FREQ_RANGE_PRESETS } from '@/lib/dsp/constants'
 import { roundFreqToNice } from '@/lib/utils/mathHelpers'
+
+// ── Custom Presets ─────────────────────────────────────────────────────────────
+const PRESETS_STORAGE_KEY = 'ktr-custom-presets'
+const MAX_CUSTOM_PRESETS = 5
+
+interface CustomPreset {
+  name: string
+  settings: Partial<DetectorSettings>
+}
+
+function loadCustomPresets(): CustomPreset[] {
+  try {
+    const raw = localStorage.getItem(PRESETS_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function saveCustomPresets(presets: CustomPreset[]) {
+  try {
+    localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/** Keys captured by custom presets — excludes display/graph settings */
+const PRESET_KEYS: (keyof DetectorSettings)[] = [
+  'feedbackThresholdDb', 'ringThresholdDb', 'growthRateThreshold',
+  'sustainMs', 'clearMs', 'holdTimeMs', 'confidenceThreshold',
+  'minFrequency', 'maxFrequency', 'eqPreset', 'aWeightingEnabled',
+  'harmonicFilterEnabled', 'musicAware', 'autoMusicAware',
+  'algorithmMode', 'enabledAlgorithms', 'prominenceDb',
+]
 
 interface DetectionControlsProps {
   settings: DetectorSettings
@@ -25,6 +60,7 @@ function formatFreqLabel(hz: number): string {
 }
 
 export const DetectionControls = memo(function DetectionControls({ settings, onModeChange, onSettingsChange }: DetectionControlsProps) {
+  const isQuick = settings.quickControlsMode
 
   const handleFreqSliderChange = useCallback(([logMin, logMax]: number[]) => {
     const newMin = roundFreqToNice(Math.pow(10, logMin))
@@ -32,9 +68,48 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
     onSettingsChange({ minFrequency: newMin, maxFrequency: newMax })
   }, [onSettingsChange])
 
+  // ── Custom preset state ──────────────────────────────────────────────
+  const [customPresets, setCustomPresets] = useState<CustomPreset[]>(loadCustomPresets)
+  const [presetName, setPresetName] = useState('')
+  const [showSaveInput, setShowSaveInput] = useState(false)
+
+  const handleSavePreset = useCallback(() => {
+    const name = presetName.trim()
+    if (!name) return
+    const snap: Partial<DetectorSettings> = {}
+    for (const key of PRESET_KEYS) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(snap as any)[key] = settings[key]
+    }
+    const updated = [...customPresets.filter(p => p.name !== name), { name, settings: snap }].slice(-MAX_CUSTOM_PRESETS)
+    setCustomPresets(updated)
+    saveCustomPresets(updated)
+    setPresetName('')
+    setShowSaveInput(false)
+  }, [presetName, settings, customPresets])
+
+  const handleDeletePreset = useCallback((name: string) => {
+    const updated = customPresets.filter(p => p.name !== name)
+    setCustomPresets(updated)
+    saveCustomPresets(updated)
+  }, [customPresets])
+
+  const handleLoadPreset = useCallback((preset: CustomPreset) => {
+    onSettingsChange(preset.settings)
+  }, [onSettingsChange])
+
   return (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-1.5">
+
+        {/* Quick / Full toggle */}
+        <button
+          onClick={() => onSettingsChange({ quickControlsMode: !isQuick })}
+          className="w-full flex items-center justify-between px-1.5 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border"
+        >
+          <span>{isQuick ? 'Quick Controls' : 'Full Controls'}</span>
+          {isQuick ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+        </button>
 
         {/* Freq range — dual slider + preset chips */}
         <div className="space-y-1">
@@ -81,7 +156,10 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
           />
         </div>
 
-        {/* Auto Music-Aware toggle */}
+        {/* ── Quick mode: only Threshold + Mode shown below ───── */}
+
+        {/* Auto Music-Aware toggle — full mode only */}
+        {!isQuick && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Music-Aware</span>
@@ -119,9 +197,11 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
             }`} />
           </button>
         </div>
+        )}
 
         {/* Sliders */}
         <div className="space-y-0">
+          {/* Threshold — always visible */}
           <div className="pb-1.5">
             <SliderRow
               label="Threshold"
@@ -141,61 +221,67 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               />
             </div>
           </div>
-          <div className="py-1.5">
-            <SliderRow
-              label="Ring"
-              value={`${settings.ringThresholdDb}dB`}
-              tooltip={settings.showTooltips ? 'Resonance detection. 2-3 dB ring out/monitors, 4-5 dB normal, 6+ dB live music/outdoor.' : undefined}
-              min={1} max={12} step={0.5}
-              sliderValue={settings.ringThresholdDb}
-              onChange={(v) => onSettingsChange({ ringThresholdDb: v })}
-            />
-          </div>
-          <div className="pt-1.5">
-            <SliderRow
-              label="Growth"
-              value={`${settings.growthRateThreshold.toFixed(1)}dB/s`}
-              tooltip={settings.showTooltips ? 'How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.' : undefined}
-              min={0.5} max={8} step={0.5}
-              sliderValue={settings.growthRateThreshold}
-              onChange={(v) => onSettingsChange({ growthRateThreshold: v })}
-            />
-          </div>
-          {settings.autoGainEnabled && (
-            <div className="pt-1.5">
-              <SliderRow
-                label="AG Target"
-                value={`${settings.autoGainTargetDb} dBFS`}
-                tooltip={settings.showTooltips ? 'Post-gain peak target. Lower = fewer false positives, less sensitivity. -12 hot (ring out), -18 balanced, -24 conservative (broadcast).' : undefined}
-                min={-30} max={-6} step={1}
-                sliderValue={settings.autoGainTargetDb}
-                onChange={(v) => onSettingsChange({ autoGainTargetDb: v })}
-              />
-            </div>
+          {/* Full-mode sliders */}
+          {!isQuick && (
+            <>
+              <div className="py-1.5">
+                <SliderRow
+                  label="Ring"
+                  value={`${settings.ringThresholdDb}dB`}
+                  tooltip={settings.showTooltips ? 'Resonance detection. 2-3 dB ring out/monitors, 4-5 dB normal, 6+ dB live music/outdoor.' : undefined}
+                  min={1} max={12} step={0.5}
+                  sliderValue={settings.ringThresholdDb}
+                  onChange={(v) => onSettingsChange({ ringThresholdDb: v })}
+                />
+              </div>
+              <div className="pt-1.5">
+                <SliderRow
+                  label="Growth"
+                  value={`${settings.growthRateThreshold.toFixed(1)}dB/s`}
+                  tooltip={settings.showTooltips ? 'How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.' : undefined}
+                  min={0.5} max={8} step={0.5}
+                  sliderValue={settings.growthRateThreshold}
+                  onChange={(v) => onSettingsChange({ growthRateThreshold: v })}
+                />
+              </div>
+              {settings.autoGainEnabled && (
+                <div className="pt-1.5">
+                  <SliderRow
+                    label="AG Target"
+                    value={`${settings.autoGainTargetDb} dBFS`}
+                    tooltip={settings.showTooltips ? 'Post-gain peak target. Lower = fewer false positives, less sensitivity. -12 hot (ring out), -18 balanced, -24 conservative (broadcast).' : undefined}
+                    min={-30} max={-6} step={1}
+                    sliderValue={settings.autoGainTargetDb}
+                    onChange={(v) => onSettingsChange({ autoGainTargetDb: v })}
+                  />
+                </div>
+              )}
+              <div className="pt-1.5">
+                <SliderRow
+                  label="Confidence"
+                  value={`${Math.round((settings.confidenceThreshold ?? 0.35) * 100)}%`}
+                  tooltip={settings.showTooltips ? 'Minimum confidence to flag an issue. 25-35% aggressive (ring out), 45-55% balanced, 60%+ conservative (live music).' : undefined}
+                  min={0.2} max={0.8} step={0.05}
+                  sliderValue={settings.confidenceThreshold ?? 0.35}
+                  onChange={(v) => onSettingsChange({ confidenceThreshold: v })}
+                />
+              </div>
+              <div className="pt-1.5">
+                <SliderRow
+                  label="Sustain"
+                  value={`${settings.sustainMs}ms`}
+                  tooltip={settings.showTooltips ? 'How long a peak must persist before flagging. 100-200ms aggressive, 300-500ms balanced, 600ms+ filters transients.' : undefined}
+                  min={100} max={1000} step={50}
+                  sliderValue={settings.sustainMs}
+                  onChange={(v) => onSettingsChange({ sustainMs: v })}
+                />
+              </div>
+            </>
           )}
-          <div className="pt-1.5">
-            <SliderRow
-              label="Confidence"
-              value={`${Math.round((settings.confidenceThreshold ?? 0.35) * 100)}%`}
-              tooltip={settings.showTooltips ? 'Minimum confidence to flag an issue. 25-35% aggressive (ring out), 45-55% balanced, 60%+ conservative (live music).' : undefined}
-              min={0.2} max={0.8} step={0.05}
-              sliderValue={settings.confidenceThreshold ?? 0.35}
-              onChange={(v) => onSettingsChange({ confidenceThreshold: v })}
-            />
-          </div>
-          <div className="pt-1.5">
-            <SliderRow
-              label="Sustain"
-              value={`${settings.sustainMs}ms`}
-              tooltip={settings.showTooltips ? 'How long a peak must persist before flagging. 100-200ms aggressive, 300-500ms balanced, 600ms+ filters transients.' : undefined}
-              min={100} max={1000} step={50}
-              sliderValue={settings.sustainMs}
-              onChange={(v) => onSettingsChange({ sustainMs: v })}
-            />
-          </div>
         </div>
 
-        {/* Algorithm Mode toggle grid */}
+        {/* Algorithm Mode toggle grid — full mode only */}
+        {!isQuick && (
         <div className="space-y-1">
           <span className="text-xs text-muted-foreground">Algorithm Mode</span>
           <button
@@ -257,8 +343,10 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
             })}
           </div>
         </div>
+        )}
 
-        {/* A-Weighting toggle */}
+        {/* A-Weighting toggle — full mode only */}
+        {!isQuick && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">A-Weight</span>
@@ -287,11 +375,12 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
             }`} />
           </button>
         </div>
+        )}
 
         {/* ─── Additional Controls ─────────────────────────────── */}
         <div className="border-t border-border pt-1.5 mt-1.5 space-y-1.5">
 
-          {/* Operation Mode chips */}
+          {/* Operation Mode chips — always visible */}
           <div className="space-y-1">
             <span className="text-xs text-muted-foreground">Mode</span>
             <div className="flex items-center gap-1 flex-wrap">
@@ -323,91 +412,151 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
             </div>
           </div>
 
-          {/* Hold Time slider */}
-          <SliderRow
-            label="Hold"
-            value={`${(settings.holdTimeMs / 1000).toFixed(1)}s`}
-            tooltip={settings.showTooltips ? 'How long feedback stays flagged on screen. 0.5-1s fast workflow, 2-3s relaxed monitoring.' : undefined}
-            min={500} max={5000} step={100}
-            sliderValue={settings.holdTimeMs}
-            onChange={(v) => onSettingsChange({ holdTimeMs: v })}
-          />
+          {/* Full-mode additional controls */}
+          {!isQuick && (
+            <>
+              <SliderRow
+                label="Hold"
+                value={`${(settings.holdTimeMs / 1000).toFixed(1)}s`}
+                tooltip={settings.showTooltips ? 'How long feedback stays flagged on screen. 0.5-1s fast workflow, 2-3s relaxed monitoring.' : undefined}
+                min={500} max={5000} step={100}
+                sliderValue={settings.holdTimeMs}
+                onChange={(v) => onSettingsChange({ holdTimeMs: v })}
+              />
+              <SliderRow
+                label="Clear"
+                value={`${settings.clearMs}ms`}
+                tooltip={settings.showTooltips ? 'How fast resolved issues disappear. 100-200ms snappy, 400-600ms smooth, 1000ms+ persistent.' : undefined}
+                min={100} max={2000} step={50}
+                sliderValue={settings.clearMs}
+                onChange={(v) => onSettingsChange({ clearMs: v })}
+              />
+              <SliderRow
+                label="Max Issues"
+                value={`${settings.maxDisplayedIssues}`}
+                tooltip={settings.showTooltips ? 'How many feedback issues display at once. 3-6 for focused work, 8-12 for full overview.' : undefined}
+                min={3} max={12} step={1}
+                sliderValue={settings.maxDisplayedIssues}
+                onChange={(v) => onSettingsChange({ maxDisplayedIssues: v })}
+              />
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">EQ Style</span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {([
+                    ['surgical', 'Surgical'],
+                    ['heavy', 'Heavy'],
+                  ] as const).map(([style, label]) => {
+                    const isActive = settings.eqPreset === style
+                    return (
+                      <button
+                        key={style}
+                        onClick={() => onSettingsChange({ eqPreset: style })}
+                        className={`px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${
+                          isActive
+                            ? 'bg-primary/20 text-primary border border-primary/40'
+                            : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground">Harmonics</span>
+                  {settings.showTooltips && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[200px] text-xs">
+                        Filter harmonic series to reduce false positives from instruments. Disable for ring-out or monitors.
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <button
+                  role="switch"
+                  aria-checked={settings.harmonicFilterEnabled}
+                  aria-label="Toggle harmonic filter"
+                  onClick={() => onSettingsChange({ harmonicFilterEnabled: !settings.harmonicFilterEnabled })}
+                  className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    settings.harmonicFilterEnabled ? 'bg-primary' : 'bg-muted'
+                  }`}
+                >
+                  <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
+                    settings.harmonicFilterEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            </>
+          )}
 
-          {/* Clear Time slider */}
-          <SliderRow
-            label="Clear"
-            value={`${settings.clearMs}ms`}
-            tooltip={settings.showTooltips ? 'How fast resolved issues disappear. 100-200ms snappy, 400-600ms smooth, 1000ms+ persistent.' : undefined}
-            min={100} max={2000} step={50}
-            sliderValue={settings.clearMs}
-            onChange={(v) => onSettingsChange({ clearMs: v })}
-          />
-
-          {/* Max Issues slider */}
-          <SliderRow
-            label="Max Issues"
-            value={`${settings.maxDisplayedIssues}`}
-            tooltip={settings.showTooltips ? 'How many feedback issues display at once. 3-6 for focused work, 8-12 for full overview.' : undefined}
-            min={3} max={12} step={1}
-            sliderValue={settings.maxDisplayedIssues}
-            onChange={(v) => onSettingsChange({ maxDisplayedIssues: v })}
-          />
-
-          {/* EQ Style chips */}
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">EQ Style</span>
-            <div className="flex items-center gap-1 flex-wrap">
-              {([
-                ['surgical', 'Surgical'],
-                ['heavy', 'Heavy'],
-              ] as const).map(([style, label]) => {
-                const isActive = settings.eqPreset === style
-                return (
-                  <button
-                    key={style}
-                    onClick={() => onSettingsChange({ eqPreset: style })}
-                    className={`px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary/20 text-primary border border-primary/40'
-                        : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
+          {/* Custom presets — always visible */}
+          {customPresets.length > 0 && (
+            <div className="space-y-1 pt-1">
+              <span className="text-xs text-muted-foreground">Saved Presets</span>
+              <div className="flex items-center gap-1 flex-wrap">
+                {customPresets.map((preset) => (
+                  <div key={preset.name} className="inline-flex items-center gap-0.5">
+                    <button
+                      onClick={() => handleLoadPreset(preset)}
+                      className="px-1.5 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground border border-transparent hover:border-border transition-colors"
+                    >
+                      {preset.name}
+                    </button>
+                    <button
+                      onClick={() => handleDeletePreset(preset.name)}
+                      className="text-muted-foreground/30 hover:text-red-400 transition-colors"
+                      aria-label={`Delete ${preset.name} preset`}
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Harmonic Filter toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Harmonics</span>
-              {settings.showTooltips && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-[200px] text-xs">
-                    Filter harmonic series to reduce false positives from instruments. Disable for ring-out or monitors.
-                  </TooltipContent>
-                </Tooltip>
-              )}
+          {/* Save preset */}
+          {showSaveInput ? (
+            <div className="flex items-center gap-1">
+              <input
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
+                placeholder="Preset name..."
+                className="flex-1 px-1.5 py-0.5 rounded text-xs bg-muted border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                autoFocus
+                maxLength={20}
+              />
+              <button
+                onClick={handleSavePreset}
+                disabled={!presetName.trim()}
+                className="px-1.5 py-0.5 rounded text-xs font-medium bg-primary/20 text-primary border border-primary/40 disabled:opacity-40 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => { setShowSaveInput(false); setPresetName('') }}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
             </div>
-            <button
-              role="switch"
-              aria-checked={settings.harmonicFilterEnabled}
-              aria-label="Toggle harmonic filter"
-              onClick={() => onSettingsChange({ harmonicFilterEnabled: !settings.harmonicFilterEnabled })}
-              className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                settings.harmonicFilterEnabled ? 'bg-primary' : 'bg-muted'
-              }`}
-            >
-              <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-                settings.harmonicFilterEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
-              }`} />
-            </button>
-          </div>
+          ) : (
+            customPresets.length < MAX_CUSTOM_PRESETS && (
+              <button
+                onClick={() => setShowSaveInput(true)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Save className="w-3 h-3" />
+                Save as Preset
+              </button>
+            )
+          )}
 
         </div>
 

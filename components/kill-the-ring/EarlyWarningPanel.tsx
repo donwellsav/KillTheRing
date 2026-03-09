@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo, useState, useEffect, useRef } from 'react'
 import { ChevronDown, ChevronRight, Radio } from 'lucide-react'
 import { formatFrequency } from '@/lib/utils/pitchUtils'
 import type { EarlyWarning } from '@/hooks/useAudioAnalyzer'
@@ -11,6 +11,21 @@ interface EarlyWarningPanelProps {
 
 export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning }: EarlyWarningPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+
+  // Item 12: Elapsed time since early warning first detected
+  const [elapsedSec, setElapsedSec] = useState(0)
+  const timestampRef = useRef<number>(0)
+
+  useEffect(() => {
+    if (!earlyWarning) { setElapsedSec(0); return }
+    timestampRef.current = earlyWarning.timestamp
+    // Immediately compute current elapsed
+    setElapsedSec(Math.round((Date.now() - earlyWarning.timestamp) / 1000))
+    const id = setInterval(() => {
+      setElapsedSec(Math.round((Date.now() - timestampRef.current) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [earlyWarning])
 
   if (!earlyWarning || earlyWarning.predictedFrequencies.length === 0) return null
 
@@ -26,6 +41,13 @@ export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning 
       >
         <Radio className="w-3 h-3 animate-pulse" aria-hidden="true" />
         <span>Early Warning</span>
+        {elapsedSec > 0 && (
+          <span className={`font-mono text-[0.625rem] tabular-nums ${
+            elapsedSec >= 10 ? 'text-red-400' : elapsedSec >= 5 ? 'text-amber-300' : 'text-amber-400/60'
+          }`}>
+            {elapsedSec}s
+          </span>
+        )}
         <span className="ml-auto font-mono text-amber-400/70">{confidencePct}%</span>
         {isExpanded
           ? <ChevronDown className="w-3 h-3 text-amber-400/50" />
@@ -56,6 +78,18 @@ export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning 
               <span>Path: {estimatedPathLength.toFixed(1)} m</span>
             )}
           </div>
+
+          {/* Persistence indicator — fills over 15s to show urgency */}
+          {elapsedSec > 0 && (
+            <div className="h-1 rounded-full bg-amber-500/10 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+                  elapsedSec >= 10 ? 'bg-red-400/70' : elapsedSec >= 5 ? 'bg-amber-400/70' : 'bg-amber-400/40'
+                }`}
+                style={{ width: `${Math.min(100, (elapsedSec / 15) * 100)}%` }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
