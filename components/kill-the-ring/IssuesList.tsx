@@ -172,14 +172,20 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
                 )}
               </Tooltip>
             </TooltipProvider>
-            {(pitchStr || (bandHz != null && bandHz !== advisory.trueFrequencyHz)) && (
-              <div className="flex items-baseline gap-1 mt-0.5">
+            {(pitchStr || (bandHz != null && bandHz !== advisory.trueFrequencyHz) || hasEq) && (
+              <div className="flex items-baseline gap-x-2 gap-y-0.5 flex-wrap mt-0.5">
                 {pitchStr && (
                   <span className="text-xs font-mono text-muted-foreground leading-none">{pitchStr}</span>
                 )}
                 {bandHz != null && bandHz !== advisory.trueFrequencyHz && (
                   <span className="text-xs font-mono text-muted-foreground/50 leading-none">
                     → {formatFrequency(bandHz)}
+                  </span>
+                )}
+                {hasEq && (
+                  <span className="text-xs font-mono text-muted-foreground leading-none">
+                    GEQ <span className="text-foreground font-medium">{geq?.suggestedDb}dB</span>
+                    {' '}PEQ <span className="text-foreground font-medium">Q{(peq?.q ?? 1).toFixed(0)} {peq?.gainDb ?? 0}dB</span>
                   </span>
                 )}
               </div>
@@ -264,17 +270,6 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
               )}
             </div>
 
-            {/* EQ recommendation — compact, right-aligned */}
-            {hasEq && (
-              <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                <span>
-                  GEQ <span className="text-foreground font-medium">{geq?.suggestedDb}dB</span>
-                </span>
-                <span>
-                  PEQ <span className="text-foreground font-medium">Q{(peq?.q ?? 1).toFixed(0)} {peq?.gainDb ?? 0}dB</span>
-                </span>
-              </div>
-            )}
           </div>
         </div>
 
