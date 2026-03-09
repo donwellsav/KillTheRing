@@ -359,11 +359,11 @@ export const VerticalGainFader = memo(function VerticalGainFader({
           />
           {/* Noise floor overlay */}
           {noiseFloorDb != null && (
-            <div className="absolute bottom-0 inset-x-0 flex flex-col items-center pb-1 pointer-events-none">
-              <span className="text-[0.5rem] font-mono text-muted-foreground/70 leading-none">
+            <div className="absolute bottom-0 inset-x-0 flex flex-col items-center pb-1.5 pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+              <span className="text-[0.5625rem] font-mono font-semibold text-white/70 leading-none">
                 Floor
               </span>
-              <span className="text-[0.5625rem] font-mono font-bold text-muted-foreground leading-none">
+              <span className="text-xs font-mono font-bold text-white leading-none">
                 {noiseFloorDb.toFixed(0)}dB
               </span>
             </div>
