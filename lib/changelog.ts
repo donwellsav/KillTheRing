@@ -14,6 +14,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.89',
+    date: '2026-03-08',
+    changes: [
+      { type: 'fix', description: 'Fix portals (Settings, Help, dropdowns, tooltips) not rendering in fullscreen mode' },
+    ],
+  },
+  {
     version: '1.0.88',
     date: '2026-03-08',
     changes: [

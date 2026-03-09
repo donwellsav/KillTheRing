@@ -9,6 +9,7 @@ import { HeaderBar } from './HeaderBar'
 import { MobileLayout } from './MobileLayout'
 import { DesktopLayout } from './DesktopLayout'
 import { OnboardingOverlay } from './OnboardingOverlay'
+import { PortalContainerProvider } from '@/contexts/PortalContainerContext'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import type { ImperativePanelHandle } from 'react-resizable-panels'
@@ -244,6 +245,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   return (
     <div ref={rootRef} className="flex flex-col h-screen bg-background">
+      <PortalContainerProvider value={isFullscreen ? rootRef.current : null}>
       <HeaderBar
         isRunning={isRunning}
         start={startWithDevice}
@@ -341,6 +343,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       />
 
       <OnboardingOverlay />
+      </PortalContainerProvider>
     </div>
   )
 })
