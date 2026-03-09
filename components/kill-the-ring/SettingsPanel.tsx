@@ -76,9 +76,8 @@ export const SettingsPanel = memo(function SettingsPanel({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground h-14 w-14 p-0 sm:h-auto sm:w-auto sm:px-3" aria-label="Settings">
-          <Settings className="w-7 h-7 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline text-xs">Settings</span>
+        <Button variant="ghost" size="icon" className="h-14 w-14 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground" aria-label="Settings">
+          <Settings className="h-7 w-7 sm:h-4 sm:w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
@@ -96,11 +95,11 @@ export const SettingsPanel = memo(function SettingsPanel({
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="detection" className="gap-1 text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
-              Detection
+              Detect
             </TabsTrigger>
             <TabsTrigger value="algorithms" className="gap-1 text-xs">
               <Cpu className="w-3.5 h-3.5" />
-              Algorithms
+              Algos
             </TabsTrigger>
             <TabsTrigger value="display" className="gap-1 text-xs">
               <Monitor className="w-3.5 h-3.5" />
@@ -112,7 +111,7 @@ export const SettingsPanel = memo(function SettingsPanel({
             </TabsTrigger>
             <TabsTrigger value="advanced" className="gap-1 text-xs">
               <Wrench className="w-3.5 h-3.5" />
-              Advanced
+              Adv
             </TabsTrigger>
           </TabsList>
 

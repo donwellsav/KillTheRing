@@ -19,7 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { HelpCircle } from 'lucide-react'
+import { HelpCircle, BookOpen, SlidersHorizontal, Cpu, List, Info } from 'lucide-react'
 import { CHANGELOG, type ChangeType } from '@/lib/changelog'
 
 const TYPE_STYLES: Record<ChangeType, { label: string; className: string }> = {
@@ -36,9 +36,8 @@ export const HelpMenu = memo(function HelpMenu() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button suppressHydrationWarning variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground h-14 w-14 p-0 sm:h-auto sm:w-auto sm:px-3" aria-label="Help">
-          <HelpCircle className="w-7 h-7 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline text-xs">Help</span>
+        <Button variant="ghost" size="icon" className="h-14 w-14 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground" aria-label="Help">
+          <HelpCircle className="h-7 w-7 sm:h-4 sm:w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="sm:max-w-xl overflow-y-auto">
@@ -48,11 +47,26 @@ export const HelpMenu = memo(function HelpMenu() {
 
         <Tabs defaultValue="guide" className="mt-4">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="guide">Guide</TabsTrigger>
-            <TabsTrigger value="modes">Modes</TabsTrigger>
-            <TabsTrigger value="algorithms">Algorithms</TabsTrigger>
-            <TabsTrigger value="reference">Reference</TabsTrigger>
-            <TabsTrigger value="about">About</TabsTrigger>
+            <TabsTrigger value="guide" className="gap-1 text-xs">
+              <BookOpen className="w-3.5 h-3.5" />
+              Guide
+            </TabsTrigger>
+            <TabsTrigger value="modes" className="gap-1 text-xs">
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Modes
+            </TabsTrigger>
+            <TabsTrigger value="algorithms" className="gap-1 text-xs">
+              <Cpu className="w-3.5 h-3.5" />
+              Algos
+            </TabsTrigger>
+            <TabsTrigger value="reference" className="gap-1 text-xs">
+              <List className="w-3.5 h-3.5" />
+              Ref
+            </TabsTrigger>
+            <TabsTrigger value="about" className="gap-1 text-xs">
+              <Info className="w-3.5 h-3.5" />
+              About
+            </TabsTrigger>
           </TabsList>
 
           {/* ═══════════════════════════════════════════════════════════════

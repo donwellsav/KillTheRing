@@ -5,7 +5,7 @@ import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
 import { HelpMenu } from './HelpMenu'
 import { SettingsPanel } from './SettingsPanel'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,25 +122,23 @@ export const HeaderBar = memo(function HeaderBar({
         {/* Audio source selector */}
         {devices.length > 0 && (
           <DropdownMenu>
-            <TooltipProvider delayDuration={400}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                      aria-label="Select audio input"
-                    >
-                      <Mic className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  Audio input
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    aria-label="Select audio input"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                Audio input
+              </TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="end" className="max-w-[280px]">
               <DropdownMenuRadioGroup value={selectedDeviceId} onValueChange={onDeviceChange}>
                 <DropdownMenuRadioItem value="" className="text-xs">
@@ -157,71 +155,65 @@ export const HeaderBar = memo(function HeaderBar({
         )}
 
         {noiseFloorDb !== null && (
-          <span className="font-mono text-[0.5625rem] sm:text-[0.625rem] hidden landscape:inline mr-auto sm:mr-0">
+          <span className="font-mono text-[0.5625rem] sm:text-[0.625rem] hidden landscape:inline">
             Floor: {noiseFloorDb.toFixed(0)}dB
           </span>
         )}
 
-        <TooltipProvider delayDuration={400}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetLayout}
-                className="hidden landscape:flex h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                aria-label="Reset layout"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              Reset layout
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={resetLayout}
+              className="hidden landscape:flex h-8 w-8 text-muted-foreground hover:text-foreground"
+              aria-label="Reset layout"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            Reset layout
+          </TooltipContent>
+        </Tooltip>
 
-        <TooltipProvider delayDuration={400}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleFullscreen}
-                className="hidden landscape:flex h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                aria-label="Toggle fullscreen"
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleFullscreen}
+              className="hidden landscape:flex h-8 w-8 text-muted-foreground hover:text-foreground"
+              aria-label="Toggle fullscreen"
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          </TooltipContent>
+        </Tooltip>
 
         {isRunning && (
-          <TooltipProvider delayDuration={400}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleFreeze}
-                  className={`hidden landscape:flex h-8 w-8 p-0 ${
-                    isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  aria-label={isFrozen ? 'Unfreeze spectrum' : 'Freeze spectrum'}
-                  aria-pressed={isFrozen}
-                >
-                  {isFrozen ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                {isFrozen ? 'Unfreeze (P)' : 'Freeze display (P)'}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleFreeze}
+                className={`hidden landscape:flex h-8 w-8 ${
+                  isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-label={isFrozen ? 'Unfreeze spectrum' : 'Freeze spectrum'}
+                aria-pressed={isFrozen}
+              >
+                {isFrozen ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              {isFrozen ? 'Unfreeze (P)' : 'Freeze display (P)'}
+            </TooltipContent>
+          </Tooltip>
         )}
 
         <FeedbackHistoryPanel />

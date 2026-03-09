@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { History, Download, Trash2, AlertTriangle, TrendingUp, BarChart3 } from 'lucide-react'
 import { getFeedbackHistory, type FrequencyHotspot } from '@/lib/dsp/feedbackHistory'
 
@@ -69,11 +70,18 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-14 w-14 sm:h-8 sm:w-8" title="Feedback History">
-          <History className="h-7 w-7 sm:h-4 sm:w-4" />
-        </Button>
-      </SheetTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-14 w-14 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground" aria-label="Feedback History">
+              <History className="h-7 w-7 sm:h-4 sm:w-4" />
+            </Button>
+          </SheetTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">
+          History
+        </TooltipContent>
+      </Tooltip>
       <SheetContent side="right" className="w-full sm:w-[400px] lg:w-[540px] bg-background border-border">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 font-bold tracking-tight">
