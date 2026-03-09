@@ -57,11 +57,11 @@ export const HelpMenu = memo(function HelpMenu() {
             </TabsTrigger>
             <TabsTrigger value="algorithms" className="gap-1 text-xs">
               <Cpu className="w-3.5 h-3.5" />
-              Algos
+              Algorithms
             </TabsTrigger>
             <TabsTrigger value="reference" className="gap-1 text-xs">
               <List className="w-3.5 h-3.5" />
-              Ref
+              Reference
             </TabsTrigger>
             <TabsTrigger value="about" className="gap-1 text-xs">
               <Info className="w-3.5 h-3.5" />

@@ -95,11 +95,11 @@ export const SettingsPanel = memo(function SettingsPanel({
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="detection" className="gap-1 text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
-              Detect
+              Detection
             </TabsTrigger>
             <TabsTrigger value="algorithms" className="gap-1 text-xs">
               <Cpu className="w-3.5 h-3.5" />
-              Algos
+              Algorithms
             </TabsTrigger>
             <TabsTrigger value="display" className="gap-1 text-xs">
               <Monitor className="w-3.5 h-3.5" />
@@ -111,7 +111,7 @@ export const SettingsPanel = memo(function SettingsPanel({
             </TabsTrigger>
             <TabsTrigger value="advanced" className="gap-1 text-xs">
               <Wrench className="w-3.5 h-3.5" />
-              Adv
+              Advanced
             </TabsTrigger>
           </TabsList>
 
