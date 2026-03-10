@@ -14,6 +14,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.76.16',
+    date: '2026-03-10',
+    changes: [
+      { type: 'fix', description: 'docs: comprehensive documentation overhaul for calibration, export, and new features' },
+    ],
+  },
+  {
     version: '0.76.15',
     date: '2026-03-10',
     changes: [
