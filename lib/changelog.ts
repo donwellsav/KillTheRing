@@ -14,6 +14,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.76.13',
+    date: '2026-03-10',
+    changes: [
+      { type: 'fix', description: 'revert: undo all backend hardening — restore sw, manifest, KillTheRingClient' },
+    ],
+  },
+  {
     version: '0.76.12',
     date: '2026-03-10',
     changes: [
