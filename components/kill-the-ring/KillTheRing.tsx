@@ -42,6 +42,7 @@ function getErrorGuidance(error: string): string {
 export const KillTheRing = memo(function KillTheRingComponent() {
   const {
     isRunning,
+    isStarting,
     error,
     workerError,
     noiseFloorDb,
@@ -333,7 +334,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       />
 
       {error && !isErrorDismissed && (
-        <div className="px-3 py-2 sm:px-4 sm:py-2.5 bg-destructive/10 border-b border-destructive/20">
+        <div role="alert" className="px-3 py-2 sm:px-4 sm:py-2.5 bg-destructive/10 border-b border-destructive/20 max-h-[40vh] overflow-y-auto">
           <div className="flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-1">
@@ -363,12 +364,18 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       )}
 
       {workerError && (
-        <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-500/5 border-b border-amber-500/20">
+        <div role="alert" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-500/5 border-b border-amber-500/20">
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
             <p className="text-sm font-mono text-amber-600 dark:text-amber-400">
               DSP worker error — analysis may be degraded. Auto-recovering…
             </p>
+            <button
+              onClick={handleRetry}
+              className="ml-auto text-sm font-mono text-amber-400 hover:text-amber-300 underline underline-offset-2 flex-shrink-0 transition-colors"
+            >
+              Restart
+            </button>
           </div>
         </div>
       )}
@@ -377,6 +384,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         mobileTab={mobileTab}
         setMobileTab={setMobileTab}
         isRunning={isRunning}
+        isStarting={isStarting}
         error={error}
         start={startWithDevice}
         isFrozen={isFrozen}
@@ -411,6 +419,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       <DesktopLayout
         layoutKey={layoutKey}
         isRunning={isRunning}
+        isStarting={isStarting}
         error={error}
         start={startWithDevice}
         stop={stop}

@@ -200,3 +200,22 @@
     animation: start-glow 3s ease-in-out infinite;
   }
 }
+
+/* ── Reduced motion: respect user preference (WCAG 2.3.3) ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-emergency-glow {
+    animation: none;
+    box-shadow: 0 0 12px rgba(255, 60, 60, 0.45), 0 0 4px rgba(255, 60, 60, 0.15);
+  }
+  .animate-led-blink {
+    animation: none;
+    opacity: 1;
+  }
+  .animate-start-glow {
+    animation: none;
+    box-shadow: 0 0 12px rgba(75,146,255,0.15), 0 0 4px rgba(75,146,255,0.08);
+  }
+  .animate-flash-slow {
+    animation: none;
+  }
+}

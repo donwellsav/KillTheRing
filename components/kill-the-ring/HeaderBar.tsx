@@ -100,7 +100,7 @@ export const HeaderBar = memo(function HeaderBar({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 text-muted-foreground hover:text-foreground transition-all duration-150 active:scale-95"
+                    className="h-10 w-10 text-muted-foreground hover:text-foreground transition-all duration-150 active:scale-95"
                     aria-label="Select audio input"
                   >
                     <Mic className="size-6" />
@@ -132,14 +132,14 @@ export const HeaderBar = memo(function HeaderBar({
               variant="ghost"
               size="icon"
               onClick={resetLayout}
-              className="hidden landscape:flex h-9 w-9 text-muted-foreground hover:text-foreground transition-all duration-150 active:scale-95"
-              aria-label="Reset layout"
+              className="hidden landscape:flex h-10 w-10 text-muted-foreground hover:text-foreground transition-all duration-150 active:scale-95"
+              aria-label="Reset panel layout"
             >
               <LayoutGrid className="size-6" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-sm">
-            Reset layout (L)
+            Reset panel layout
           </TooltipContent>
         </Tooltip>
 
@@ -149,7 +149,7 @@ export const HeaderBar = memo(function HeaderBar({
               variant="ghost"
               size="icon"
               onClick={toggleFullscreen}
-              className="hidden landscape:flex h-9 w-9 text-muted-foreground hover:text-foreground transition-all duration-150 active:scale-95"
+              className="hidden landscape:flex h-10 w-10 text-muted-foreground hover:text-foreground transition-all duration-150 active:scale-95"
               aria-label="Toggle fullscreen"
             >
               {isFullscreen ? <Minimize2 className="size-6" /> : <Maximize2 className="size-6" />}
@@ -167,7 +167,7 @@ export const HeaderBar = memo(function HeaderBar({
                 variant="ghost"
                 size="icon"
                 onClick={toggleFreeze}
-                className={`hidden landscape:flex h-9 w-9 ${
+                className={`hidden landscape:flex h-10 w-10 ${
                   isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'
                 }`}
                 aria-label={isFrozen ? 'Unfreeze spectrum' : 'Freeze spectrum'}
@@ -183,10 +183,10 @@ export const HeaderBar = memo(function HeaderBar({
         )}
 
         <FeedbackHistoryPanel />
-        <Suspense fallback={<div className="h-9 w-9 sm:h-10 sm:w-10" />}>
+        <Suspense fallback={<div className="h-10 w-10" />}>
           <LazyHelpMenu />
         </Suspense>
-        <Suspense fallback={<div className="h-9 w-9 sm:h-10 sm:w-10" />}>
+        <Suspense fallback={<div className="h-10 w-10" />}>
           <LazySettingsPanel
             settings={settings}
             onSettingsChange={onSettingsChange}

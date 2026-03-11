@@ -153,7 +153,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
             <span className="text-muted-foreground/25 mx-0.5">|</span>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-amber-400 animate-pulse">
+                <span className="text-amber-400 motion-safe:animate-pulse">
                   COMP {compressionRatio.toFixed(1)}:1
                 </span>
               </TooltipTrigger>

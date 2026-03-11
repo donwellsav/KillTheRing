@@ -49,6 +49,8 @@ export interface SpectrumStatus {
 
 export interface UseAudioAnalyzerState {
   isRunning: boolean
+  /** True between clicking Start and mic stream acquisition (covers permission prompt) */
+  isStarting: boolean
   hasPermission: boolean
   error: string | null
   /** Non-fatal worker error (crash/recovery in progress) — shown as amber warning */
@@ -85,6 +87,7 @@ export function useAudioAnalyzer(
 
   const [state, setState] = useState<UseAudioAnalyzerState>({
     isRunning: false,
+    isStarting: false,
     hasPermission: false,
     error: null,
     workerError: null,
@@ -300,7 +303,7 @@ export function useAudioAnalyzer(
       advisoryMapRef.current.clear()
       advisorySortedCacheRef.current = []
       advisoryDirtyRef.current = false
-      setState(prev => ({ ...prev, advisories: [], earlyWarning: null }))
+      setState(prev => ({ ...prev, isStarting: true, advisories: [], earlyWarning: null }))
       dspWorkerRef.current.reset()
 
       await analyzerRef.current.start({ deviceId: deviceId || undefined })
@@ -311,6 +314,7 @@ export function useAudioAnalyzer(
 
       setState(prev => ({
         ...prev,
+        isStarting: false,
         isRunning: true,
         hasPermission: analyzerState.hasPermission,
         error: null,
@@ -321,6 +325,7 @@ export function useAudioAnalyzer(
     } catch (err) {
       setState(prev => ({
         ...prev,
+        isStarting: false,
         error: err instanceof Error ? err.message : 'Failed to start',
         isRunning: false,
         hasPermission: false,

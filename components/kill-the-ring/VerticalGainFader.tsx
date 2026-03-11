@@ -297,7 +297,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
             autoGainEnabled
               ? autoGainLocked
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                : 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
+                : 'bg-amber-500/20 text-amber-400 border border-amber-500/40 motion-safe:animate-pulse'
               : 'bg-muted/40 text-muted-foreground border border-border hover:text-foreground'
           }`}
           title={

@@ -39,7 +39,7 @@ export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning 
         className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-amber-400 font-medium uppercase tracking-wide hover:bg-amber-500/10 transition-colors"
         aria-expanded={isExpanded}
       >
-        <Radio className="w-3 h-3 animate-pulse" aria-hidden="true" />
+        <Radio className="w-3 h-3" aria-hidden="true" />
         <span>Early Warning</span>
         {elapsedSec > 0 && (
           <span className={`font-mono text-sm tabular-nums ${

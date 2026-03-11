@@ -381,7 +381,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly, 
           }`}>
             {(isRunaway || isWarning) ? (
               <>
-                <AlertTriangle className={`w-2.5 h-2.5 flex-shrink-0 ${isRunaway ? 'animate-pulse' : ''}`} />
+                <AlertTriangle className={`w-2.5 h-2.5 flex-shrink-0 ${isRunaway ? 'motion-safe:animate-pulse' : ''}`} />
                 <span>{isRunaway ? 'Runaway feedback' : 'Growing — act now'}</span>
                 {timeToClipStr && <span className="font-mono opacity-80 ml-0.5">{timeToClipStr}</span>}
               </>

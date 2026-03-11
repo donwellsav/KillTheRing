@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useEffect, useCallback, useState, memo } from 'react'
+import { Spinner } from '@/components/ui/spinner'
 import { useAnimationFrame } from '@/hooks/useAnimationFrame'
 import { freqToLogPosition, logPositionToFreq, roundFreqToNice, clamp } from '@/lib/utils/mathHelpers'
 import { formatFrequency } from '@/lib/utils/pitchUtils'
@@ -18,6 +19,8 @@ interface SpectrumCanvasProps {
   spectrumRef: React.RefObject<SpectrumData | null>
   advisories: Advisory[]  // Keep as prop — changes infrequently, drives markers
   isRunning: boolean
+  /** True while awaiting mic permission / stream acquisition */
+  isStarting?: boolean
   error?: string | null
   graphFontSize?: number
   onStart?: () => void
@@ -37,7 +40,7 @@ interface SpectrumCanvasProps {
 
 const GRAB_THRESHOLD_PX = 22 // 44px total touch target per line
 
-export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, advisories, isRunning, error, graphFontSize = 11, onStart, earlyWarning, rtaDbMin: rtaDbMinProp, rtaDbMax: rtaDbMaxProp, spectrumLineWidth: spectrumLineWidthProp, clearedIds, minFrequency = 20, maxFrequency = 20000, onFreqRangeChange, showThresholdLine = false, feedbackThresholdDb, isFrozen = false, canvasTargetFps }: SpectrumCanvasProps) {
+export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, advisories, isRunning, isStarting = false, error, graphFontSize = 11, onStart, earlyWarning, rtaDbMin: rtaDbMinProp, rtaDbMax: rtaDbMaxProp, spectrumLineWidth: spectrumLineWidthProp, clearedIds, minFrequency = 20, maxFrequency = 20000, onFreqRangeChange, showThresholdLine = false, feedbackThresholdDb, isFrozen = false, canvasTargetFps }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -469,7 +472,12 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
             tabIndex={onStart ? 0 : undefined}
             onKeyDown={onStart ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStart(); } } : undefined}
           >
-            {error ? (
+            {isStarting ? (
+              <span className="flex items-center gap-2.5 px-5 py-3 rounded bg-card/80 backdrop-blur-sm pointer-events-none">
+                <Spinner className="size-5 text-primary" />
+                <span className="text-sm text-neutral-300 font-mono font-medium">Requesting microphone…</span>
+              </span>
+            ) : error ? (
               <span className="flex flex-col items-center gap-1.5 px-5 py-3 rounded bg-card/80 backdrop-blur-sm pointer-events-none">
                 <span className="flex items-center gap-1.5 text-sm text-destructive font-mono font-medium">
                   <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
