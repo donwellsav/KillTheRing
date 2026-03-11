@@ -14,6 +14,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.76.21',
+    date: '2026-03-11',
+    changes: [
+      { type: 'fix', description: 'docs: update all documentation for ECM8000 mic calibration + export v1.1' },
+    ],
+  },
+  {
     version: '0.76.20',
     date: '2026-03-11',
     highlights: 'ECM8000 mic calibration compensation + calibration export v1.1',
