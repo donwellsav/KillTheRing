@@ -14,6 +14,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.77.0',
+    date: '2026-03-12',
+    changes: [
+      { type: 'feat', description: '**Batch 1 — CI + Bug Fixes**: GitHub Actions build gate (`tsc --noEmit` + `pnpm build`), bound `advisories` Map (MAX_ADVISORIES=200), prune `recentDecays` (30s TTL), revert temporary `skipWaiting` workaround in service worker' },
+      { type: 'feat', description: '**Batch 2 — Vitest Tests**: 131 unit tests across `feedbackDetector`, `classifier`, `eqAdvisor`, and `algorithmFusion` DSP modules' },
+      { type: 'feat', description: '**Batch 3 — React Contexts**: Extract `DetectionContext` + `AudioStateContext` from KillTheRing\'s 34-40 prop drilling chain → layouts consume via hooks' },
+      { type: 'feat', description: '**Batch 4 — Worker Decomposition**: Split 910-line `dspWorker.ts` into `workerFft`, `advisoryManager`, `decayAnalyzer` modules (~200-line orchestrator remains)' },
+      { type: 'feat', description: '**Batch 5 — Hook Decomposition**: Extract `useAdvisoryMap` from `useAudioAnalyzer` (379→~150 lines), fix memoization-breaking inline computations' },
+      { type: 'feat', description: '**Batch 6 — Security + Bundle + Perf**: CSP header, ESLint hardening (`no-explicit-any` → error), remove 16 unused Radix UI packages + 19 dead wrapper files, memoize IssuesList/IssueCard, eliminate N+1 feedbackHistory lookups' },
+      { type: 'feat', description: '52 files changed, +3,852 / −3,425 lines' },
+      { type: 'feat', description: '16 Radix packages removed, 19 dead files deleted' },
+      { type: 'feat', description: '131 new DSP unit tests' },
+      { type: 'feat', description: '0 `tsc` errors, 0 ESLint errors, clean production build' },
+      { type: 'feat', description: '[x] `npx tsc --noEmit` — type-check clean' },
+      { type: 'feat', description: '[x] `npx eslint .` — 0 errors (43 warnings, all pre-existing)' },
+      { type: 'feat', description: '[x] `pnpm test` — 131 tests passing' },
+      { type: 'feat', description: '[x] `pnpm build` — production build clean' },
+      { type: 'feat', description: '[ ] Manual browser test: start detection, run 5+ minutes, verify issue cards render correctly' },
+      { type: 'feat', description: '[ ] Verify CSP header in browser DevTools (no violations in console)' },
+      { type: 'feat', description: '[ ] Check mobile layout: tabs, settings panel, issue dismissal' },
+    ],
+  },
+  {
     version: '0.76.22',
     date: '2026-03-11',
     changes: [
