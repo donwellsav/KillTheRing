@@ -14,6 +14,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.81.0',
+    date: '2026-03-12',
+    changes: [
+      { type: 'feat', description: 'Add synthetic signal/phase generators (`signalGenerator.ts`, `phaseGenerator.ts`) for deterministic FFT test inputs' },
+      { type: 'feat', description: 'Create new test suites for **phaseCoherence** (12 tests) and **compressionDetection** (16 tests) — both had 0% coverage' },
+      { type: 'feat', description: 'Enhance existing tests: feedbackDetector (+5), algorithmFusion (+11), msdConsistency (+4) with confidence formula, verdict boundary, and feedbackScore edge cases' },
+      { type: 'feat', description: 'Total: **195 tests** across 7 test files (up from ~135 across 5 files)' },
+      { type: 'feat', description: '[x] `pnpm test` — all 195 tests pass' },
+      { type: 'feat', description: '[x] `npx tsc --noEmit` — type check passes' },
+      { type: 'feat', description: '[ ] CI pipeline validates build + tests' },
+    ],
+  },
+  {
     version: '0.80.0',
     date: '2026-03-12',
     changes: [
