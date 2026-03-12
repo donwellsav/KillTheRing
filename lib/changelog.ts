@@ -14,6 +14,28 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.80.0',
+    date: '2026-03-12',
+    changes: [
+      { type: 'feat', description: '**Dual-mode vertical fader** (Gain/Sensitivity) with console-style capsule thumb featuring gradient shading, 3-ridge groove lines, and mode-dependent glow shadows' },
+      { type: 'feat', description: '**Mobile fader sidecar** — persistent right-side fader strip visible across all 3 mobile tabs (Issues, Graph, Settings)' },
+      { type: 'feat', description: '**Sensitivity as default mode** with conservative 42dB threshold for new engineers' },
+      { type: 'feat', description: '**Dark metallic blue thumb** for sensitivity mode (dark navy gradient + cyan border/glow) vs white/metallic for gain mode — instantly distinguishable' },
+      { type: 'feat', description: '**Arrow indicators** (▲) guide new engineers to push the sensitivity fader up — fade out once they\'ve adjusted past 25dB' },
+      { type: 'feat', description: '**Fader mode toggle** wired into DetectionControls and DetectionTab settings panels' },
+      { type: 'feat', description: '[ ] Desktop: verify dark navy sensitivity thumb is visually distinct from white gain thumb' },
+      { type: 'feat', description: '[ ] Desktop: toggle between Gain/Sens modes — thumb color changes immediately' },
+      { type: 'feat', description: '[ ] Mobile (portrait): fader sidecar visible on all 3 tabs (Issues, Graph, Settings)' },
+      { type: 'feat', description: '[ ] Mobile: swipe between tabs — fader stays fixed on right edge' },
+      { type: 'feat', description: '[ ] Arrow indicators visible when sensitivity fader is near bottom (≥25dB)' },
+      { type: 'feat', description: '[ ] Arrows fade out as fader is pushed up past 25dB' },
+      { type: 'feat', description: '[ ] Default sensitivity starts at 42dB on fresh load' },
+      { type: 'feat', description: '[ ] `npx tsc --noEmit` passes' },
+      { type: 'feat', description: '[ ] `pnpm test` passes (151 tests)' },
+      { type: 'feat', description: '[ ] `pnpm build` succeeds' },
+    ],
+  },
+  {
     version: '0.79.0',
     date: '2026-03-12',
     changes: [
