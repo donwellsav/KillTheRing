@@ -14,6 +14,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.79.0',
+    date: '2026-03-12',
+    changes: [
+      { type: 'feat', description: '**Removes max-pool downsampling** in worker MSD path — both main-thread and worker now analyze full-resolution bins, eliminating the biggest source of divergence' },
+      { type: 'feat', description: '**Unifies buffer depth** (MAX_FRAMES 50→64), **energy gate** (relative noise-floor gate with absolute fallback), and **min frames** (content-adaptive based on operation mode)' },
+      { type: 'feat', description: '**Adds 20 new consistency tests** verifying numerical equivalence, energy gating, min-frame behavior, multi-bin isolation, and reset' },
+      { type: 'feat', description: '[x] `npx tsc --noEmit` — type check passes' },
+      { type: 'feat', description: '[x] `pnpm test` — 151/151 tests pass (131 existing + 20 new)' },
+      { type: 'feat', description: '[x] `pnpm build` — production build succeeds' },
+      { type: 'feat', description: '[x] Dev server starts and app renders without console errors' },
+      { type: 'feat', description: '[ ] Manual mic test: verify MSD threshold-reduction peaks align with fusion verdicts across Speech/Worship/Live modes' },
+    ],
+  },
+  {
     version: '0.78.0',
     date: '2026-03-12',
     changes: [
