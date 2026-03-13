@@ -269,6 +269,7 @@ export const MobileLayout = memo(function MobileLayout({
             onFaderModeChange={(mode) => onSettingsChange({ faderMode: mode })}
             sensitivityValue={settings.feedbackThresholdDb}
             onSensitivityChange={(db) => onSettingsChange({ feedbackThresholdDb: db })}
+            activeAdvisoryCount={activeAdvisoryCount}
           />
         </div>
       </div>

@@ -190,6 +190,16 @@
     animation: led-blink 2s ease-in-out infinite;
   }
 
+  /* Fast red flash for fader guidance arrows — warning urgency */
+  @keyframes arrow-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.15; }
+  }
+
+  .animate-arrow-flash {
+    animation: arrow-flash 0.6s ease-in-out infinite;
+  }
+
   /* Breathing glow for start button CTA */
   @keyframes start-glow {
     0%, 100% { box-shadow: 0 0 12px rgba(75,146,255,0.15), 0 0 4px rgba(75,146,255,0.08); }
@@ -217,5 +227,9 @@
   }
   .animate-flash-slow {
     animation: none;
+  }
+  .animate-arrow-flash {
+    animation: none;
+    opacity: 1;
   }
 }
