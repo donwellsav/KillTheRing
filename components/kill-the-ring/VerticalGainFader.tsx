@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useState, memo } from 'react'
+import { useRef, useEffect, useCallback, useState, useMemo, memo } from 'react'
 
 // Sensitivity preset quick-access values
 const SENSITIVITY_PRESETS = [[40, 'Safe'], [25, 'Norm'], [8, 'Hot']] as const
@@ -25,6 +25,7 @@ interface VerticalGainFaderProps {
   onFaderModeChange: (mode: 'gain' | 'sensitivity') => void
   sensitivityValue: number // feedbackThresholdDb (2-50)
   onSensitivityChange: (db: number) => void
+  activeAdvisoryCount: number
 }
 
 export const VerticalGainFader = memo(function VerticalGainFader({
@@ -46,6 +47,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
   onFaderModeChange,
   sensitivityValue,
   onSensitivityChange,
+  activeAdvisoryCount,
 }: VerticalGainFaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -64,6 +66,50 @@ export const VerticalGainFader = memo(function VerticalGainFader({
   const rafIdRef = useRef(0)
 
   const isSensitivity = faderMode === 'sensitivity'
+
+  // ── Fader guidance: coach the engineer toward the sweet spot ──────────────
+  // Track "running with signal but zero detections" duration
+  const noDetectionSecsRef = useRef(0)
+  const [prolongedSilence, setProlongedSilence] = useState(false)
+
+  useEffect(() => {
+    if (!isRunning || !isSensitivity) {
+      noDetectionSecsRef.current = 0
+      setProlongedSilence(false)
+      return
+    }
+    const id = setInterval(() => {
+      if (activeAdvisoryCount > 0 || level < -45) {
+        noDetectionSecsRef.current = 0
+        if (prolongedSilence) setProlongedSilence(false)
+      } else {
+        noDetectionSecsRef.current++
+        if (noDetectionSecsRef.current >= 2 && !prolongedSilence) setProlongedSilence(true)
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, [isRunning, isSensitivity, activeAdvisoryCount, level, prolongedSilence])
+
+  const guidance = useMemo(() => {
+    if (!isSensitivity || !isRunning) return { direction: 'none' as const, urgency: 'none' as const }
+    // Too many detections → back off (likely false positives)
+    if (activeAdvisoryCount >= 3) return { direction: 'down' as const, urgency: 'warning' as const }
+    // No detections for extended period → nudge up
+    if (prolongedSilence && sensitivityValue > 20) return { direction: 'up' as const, urgency: 'hint' as const }
+    // Positional: too conservative
+    if (sensitivityValue > 35) return { direction: 'up' as const, urgency: sensitivityValue >= 42 ? 'warning' as const : 'hint' as const }
+    // Positional: too aggressive
+    if (sensitivityValue < 10) return { direction: 'down' as const, urgency: sensitivityValue <= 5 ? 'warning' as const : 'hint' as const }
+    return { direction: 'none' as const, urgency: 'none' as const }
+  }, [isSensitivity, isRunning, activeAdvisoryCount, prolongedSilence, sensitivityValue])
+
+  const arrowColors = guidance.urgency === 'warning'
+    ? ['text-red-500', 'text-red-500/70', 'text-red-500/40']
+    : ['text-amber-400/80', 'text-amber-400/50', 'text-amber-400/25']
+  const arrowAnim = guidance.urgency === 'warning'
+    ? 'motion-safe:animate-arrow-flash'
+    : 'motion-safe:animate-pulse'
+
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
   const displayValue = isSensitivity
     ? sensitivityValue
@@ -524,19 +570,38 @@ export const VerticalGainFader = memo(function VerticalGainFader({
             <div className={`absolute inset-x-2 top-1/2 -translate-y-1/2 h-[2px] rounded-full ${isSensitivity ? 'bg-cyan-300/50' : autoGainEnabled ? 'bg-white/40' : 'bg-gray-600/60'}`} />
             <div className={`absolute inset-x-2.5 bottom-[6px] h-[1.5px] rounded-full ${isSensitivity ? 'bg-blue-400/30' : autoGainEnabled ? 'bg-white/25' : 'bg-gray-500/40'}`} />
           </div>
-          {/* Upward arrow hints — guide engineers to push sensitivity up */}
-          {isSensitivity && sensitivityValue >= 20 && (
+          {/* Guidance arrows — coach engineer toward sensitivity sweet spot */}
+          {guidance.direction === 'up' && (
             <div
-              className={`absolute inset-x-0 pointer-events-none flex flex-col items-center gap-1 transition-opacity duration-500 ${
-                sensitivityValue >= 35 ? 'opacity-100' : sensitivityValue >= 25 ? 'opacity-70' : 'opacity-40'
-              }`}
+              className="absolute inset-x-0 pointer-events-none flex flex-col items-center gap-1"
               style={{ bottom: `${Math.max(thumbBottom + 8, 15)}%` }}
               aria-hidden="true"
             >
-              <span className="text-primary/50 text-base font-mono leading-none motion-safe:animate-pulse">▲</span>
-              <span className="text-primary/30 text-sm font-mono leading-none">▲</span>
-              <span className="text-primary/15 text-xs font-mono leading-none">▲</span>
+              <span className={`${arrowColors[0]} text-xl font-bold font-mono leading-none ${arrowAnim}`}>▲</span>
+              <span className={`${arrowColors[1]} text-lg font-mono leading-none`}>▲</span>
+              <span className={`${arrowColors[2]} text-base font-mono leading-none`}>▲</span>
+              <span className={`${arrowColors[0]} text-[10px] font-mono font-bold leading-tight text-center`}>Missing</span>
+              <span className={`${arrowColors[0]} text-[10px] font-mono leading-tight text-center opacity-70`}>Boost ▲</span>
             </div>
+          )}
+          {guidance.direction === 'down' && (
+            <div
+              className="absolute inset-x-0 pointer-events-none flex flex-col items-center gap-1"
+              style={{ top: `${Math.min(100 - thumbBottom + 8, 85)}%` }}
+              aria-hidden="true"
+            >
+              <span className={`${arrowColors[0]} text-xl font-bold font-mono leading-none ${arrowAnim}`}>▼</span>
+              <span className={`${arrowColors[1]} text-lg font-mono leading-none`}>▼</span>
+              <span className={`${arrowColors[2]} text-base font-mono leading-none`}>▼</span>
+              <span className={`${arrowColors[0]} text-[10px] font-mono font-bold leading-tight text-center`}>Noisy</span>
+              <span className={`${arrowColors[0]} text-[10px] font-mono leading-tight text-center opacity-70`}>Back Off</span>
+            </div>
+          )}
+          {/* Screen reader guidance announcement */}
+          {guidance.direction !== 'none' && (
+            <span className="sr-only" role="status">
+              {guidance.direction === 'up' ? 'Not detecting feedback — increase sensitivity' : 'Too many detections — decrease sensitivity'}
+            </span>
           )}
           {/* Noise floor overlay — gain mode only */}
           {!isSensitivity && noiseFloorDb != null && (

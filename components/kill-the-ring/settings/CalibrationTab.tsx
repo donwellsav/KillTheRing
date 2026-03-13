@@ -4,7 +4,7 @@ import { memo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { PillToggle } from '@/components/ui/pill-toggle'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -315,9 +315,9 @@ export const CalibrationTab = memo(function CalibrationTab({
                 Behringer ECM8000 · CSL 746
               </p>
             </div>
-            <Switch
+            <PillToggle
               checked={settings.micCalibrationEnabled}
-              onCheckedChange={(checked) => onSettingsChange({ micCalibrationEnabled: checked })}
+              onChange={(checked) => onSettingsChange({ micCalibrationEnabled: checked })}
             />
           </div>
         </Section>
@@ -328,9 +328,9 @@ export const CalibrationTab = memo(function CalibrationTab({
         <Section title="Record Detection Data" tooltip="When enabled, all detection events, spectrum snapshots, and noise floor readings are automatically recorded during analysis for later export.">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-mono">Enable Calibration Mode</Label>
-            <Switch
+            <PillToggle
               checked={calibrationEnabled}
-              onCheckedChange={setCalibrationEnabled}
+              onChange={setCalibrationEnabled}
             />
           </div>
         </Section>

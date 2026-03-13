@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
+import { PillToggle } from '@/components/ui/pill-toggle'
 import { Section, SettingsGrid, type TabSettingsProps } from './SettingsShared'
 import type { AlgorithmMode, Algorithm } from '@/types/advisory'
 
@@ -90,9 +90,9 @@ export const AlgorithmsTab = memo(function AlgorithmsTab({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground font-mono tracking-wide">Auto Music-Aware</span>
-            <Switch
+            <PillToggle
               checked={settings.autoMusicAware}
-              onCheckedChange={(checked) => onSettingsChange({ autoMusicAware: checked })}
+              onChange={(checked) => onSettingsChange({ autoMusicAware: checked })}
             />
           </div>
           {settings.autoMusicAware && (
@@ -121,9 +121,9 @@ export const AlgorithmsTab = memo(function AlgorithmsTab({
       >
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground font-mono tracking-wide">Ignore whistle</span>
-          <Switch
+          <PillToggle
             checked={settings.ignoreWhistle}
-            onCheckedChange={(checked) => onSettingsChange({ ignoreWhistle: checked })}
+            onChange={(checked) => onSettingsChange({ ignoreWhistle: checked })}
           />
         </div>
       </Section>
@@ -177,9 +177,9 @@ export const AlgorithmsTab = memo(function AlgorithmsTab({
       >
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground font-mono tracking-wide">Show live scores</span>
-          <Switch
+          <PillToggle
             checked={settings.showAlgorithmScores}
-            onCheckedChange={(checked) => onSettingsChange({ showAlgorithmScores: checked })}
+            onChange={(checked) => onSettingsChange({ showAlgorithmScores: checked })}
           />
         </div>
       </Section>

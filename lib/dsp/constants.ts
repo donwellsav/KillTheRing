@@ -583,7 +583,7 @@ export const DEFAULT_SETTINGS: DetectorSettings = {
   smoothingTimeConstant: 0.5, // Faster response for quick detection
   minFrequency: 150, // Extended for body mic chest resonance (Everest: speech starts ~170 Hz)
   maxFrequency: 10000, // Condenser sibilance feedback upper bound (extends beyond intelligibility band)
-  feedbackThresholdDb: 42, // Conservative start — new engineers push up as they gain confidence
+  feedbackThresholdDb: 25, // Balanced default — matches "Norm" preset, sweet spot for most venues
   ringThresholdDb: 5, // Proven default — filters HVAC/ambient without missing genuine resonances
   growthRateThreshold: 1.0, // Allows MSD analysis on slower-growing early feedback
   holdTimeMs: 4000, // Long hold — time to walk to EQ rack during load-in

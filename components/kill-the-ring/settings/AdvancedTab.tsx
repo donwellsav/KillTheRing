@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+import { PillToggle } from '@/components/ui/pill-toggle'
 import { Database, Shield } from 'lucide-react'
 import { Section, SettingsGrid, type TabSettingsProps } from './SettingsShared'
 import type { ThresholdMode } from '@/types/advisory'
@@ -202,9 +202,9 @@ export const AdvancedTab = memo(function AdvancedTab({
                   Share spectral data
                 </span>
               </div>
-              <Switch
+              <PillToggle
                 checked={consentStatus === 'accepted'}
-                onCheckedChange={(checked) => {
+                onChange={(checked) => {
                   if (checked) onEnableCollection?.()
                   else onDisableCollection?.()
                 }}

@@ -3,7 +3,7 @@
 import { memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
+import { PillToggle } from '@/components/ui/pill-toggle'
 import {
   Select,
   SelectContent,
@@ -163,9 +163,9 @@ export const DisplayTab = memo(function DisplayTab({
       >
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground font-mono tracking-wide">Show help tooltips</span>
-          <Switch
+          <PillToggle
             checked={settings.showTooltips}
-            onCheckedChange={(checked) => onSettingsChange({ showTooltips: checked })}
+            onChange={(checked) => onSettingsChange({ showTooltips: checked })}
           />
         </div>
       </Section>

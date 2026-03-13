@@ -284,6 +284,7 @@ export const DesktopLayout = memo(function DesktopLayout({
           onFaderModeChange={(mode) => onSettingsChange({ faderMode: mode })}
           sensitivityValue={settings.feedbackThresholdDb}
           onSensitivityChange={(db) => onSettingsChange({ feedbackThresholdDb: db })}
+          activeAdvisoryCount={activeAdvisoryCount}
         />
       </div>
     </div>

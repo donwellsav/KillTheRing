@@ -3,7 +3,7 @@
 import React, { memo, useCallback, useState } from 'react'
 import { HelpCircle, Save, Trash2 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
+import { PillToggle } from '@/components/ui/pill-toggle'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DetectorSettings, OperationMode, AlgorithmMode, Algorithm } from '@/types/advisory'
 import { FREQ_RANGE_PRESETS } from '@/lib/dsp/constants'
@@ -124,6 +124,17 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
           </button>
         </div>
 
+        {/* Fader Control */}
+        <div className="space-y-0.5">
+          <span className="section-label">Fader Control</span>
+          <PillToggle
+            checked={settings.faderMode === 'sensitivity'}
+            onChange={(isSensitivity) => onSettingsChange({ faderMode: isSensitivity ? 'sensitivity' : 'gain' })}
+            labelOn="Sensitivity"
+            labelOff="Input Gain"
+          />
+        </div>
+
         {/* Freq range — dual slider + preset chips */}
         <div className="space-y-1">
           {/* Preset chips */}
@@ -196,19 +207,10 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               </span>
             )}
           </div>
-          <button
-            role="switch"
-            aria-checked={settings.autoMusicAware}
-            aria-label="Toggle auto music-aware mode"
-            onClick={() => onSettingsChange({ autoMusicAware: !settings.autoMusicAware })}
-            className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              settings.autoMusicAware ? 'bg-primary' : 'bg-muted'
-            }`}
-          >
-            <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-              settings.autoMusicAware ? 'translate-x-3.5' : 'translate-x-0.5'
-            }`} />
-          </button>
+          <PillToggle
+            checked={settings.autoMusicAware}
+            onChange={(checked) => onSettingsChange({ autoMusicAware: checked })}
+          />
         </div>
         )}
 
@@ -224,27 +226,13 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               sliderValue={52 - settings.feedbackThresholdDb}
               onChange={(v) => onSettingsChange({ feedbackThresholdDb: 52 - v })}
             />
-            <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              <button
-                onClick={() => onSettingsChange({ faderMode: settings.faderMode === 'sensitivity' ? 'gain' : 'sensitivity' })}
-                className={`text-sm font-mono transition-colors ${
-                  settings.faderMode === 'sensitivity'
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                title={settings.faderMode === 'sensitivity' ? 'Sensitivity shown on fader strip — click to switch back to gain' : 'Show sensitivity on the fader strip'}
-              >
-                {settings.faderMode === 'sensitivity' ? '◆ On fader' : '◇ Use fader'}
-              </button>
-              <div className="w-px h-3 bg-border/50" />
-              <label htmlFor="show-threshold-line" className="text-sm text-muted-foreground cursor-pointer">Show on RTA</label>
-              <Switch
-                id="show-threshold-line"
-                checked={settings.showThresholdLine}
-                onCheckedChange={(checked) => onSettingsChange({ showThresholdLine: checked })}
-                className="h-3.5 w-7 [&>span]:size-2.5"
-              />
-            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Show on RTA</span>
+            <PillToggle
+              checked={settings.showThresholdLine}
+              onChange={(checked) => onSettingsChange({ showThresholdLine: checked })}
+            />
           </div>
           {/* Full-mode sliders */}
           {!isQuick && (
@@ -386,19 +374,10 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               </Tooltip>
             )}
           </div>
-          <button
-            role="switch"
-            aria-checked={settings.aWeightingEnabled}
-            aria-label="Toggle A-weighting"
-            onClick={() => onSettingsChange({ aWeightingEnabled: !settings.aWeightingEnabled })}
-            className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              settings.aWeightingEnabled ? 'bg-primary' : 'bg-muted'
-            }`}
-          >
-            <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-              settings.aWeightingEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
-            }`} />
-          </button>
+          <PillToggle
+            checked={settings.aWeightingEnabled}
+            onChange={(checked) => onSettingsChange({ aWeightingEnabled: checked })}
+          />
         </div>
         )}
 
@@ -502,19 +481,10 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                     </Tooltip>
                   )}
                 </div>
-                <button
-                  role="switch"
-                  aria-checked={settings.harmonicFilterEnabled}
-                  aria-label="Toggle harmonic filter"
-                  onClick={() => onSettingsChange({ harmonicFilterEnabled: !settings.harmonicFilterEnabled })}
-                  className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                    settings.harmonicFilterEnabled ? 'bg-primary' : 'bg-muted'
-                  }`}
-                >
-                  <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-                    settings.harmonicFilterEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
-                  }`} />
-                </button>
+                <PillToggle
+                  checked={settings.harmonicFilterEnabled}
+                  onChange={(checked) => onSettingsChange({ harmonicFilterEnabled: checked })}
+                />
               </div>
             </>
           )}

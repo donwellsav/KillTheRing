@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
+import { PillToggle } from '@/components/ui/pill-toggle'
 import {
   Select,
   SelectContent,
@@ -68,18 +68,16 @@ export const DetectionTab = memo(function DetectionTab({
             />
             <div className="flex justify-between items-center text-sm text-muted-foreground font-mono">
               <span>Conservative</span>
-              <button
-                onClick={() => onSettingsChange({ faderMode: settings.faderMode === 'sensitivity' ? 'gain' : 'sensitivity' })}
-                className={`text-sm font-mono transition-colors ${
-                  settings.faderMode === 'sensitivity'
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                title={settings.faderMode === 'sensitivity' ? 'Sensitivity shown on fader strip' : 'Show on fader strip'}
-              >
-                {settings.faderMode === 'sensitivity' ? '◆ On fader' : '◇ Use fader'}
-              </button>
               <span>Aggressive</span>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-sm text-muted-foreground font-mono tracking-wide">Fader Control</span>
+              <PillToggle
+                checked={settings.faderMode === 'sensitivity'}
+                onChange={(isSensitivity) => onSettingsChange({ faderMode: isSensitivity ? 'sensitivity' : 'gain' })}
+                labelOn="Sensitivity"
+                labelOff="Input Gain"
+              />
             </div>
           </div>
         </Section>
@@ -220,9 +218,9 @@ export const DetectionTab = memo(function DetectionTab({
         >
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground font-mono tracking-wide">Apply A-weighting curve</span>
-            <Switch
+            <PillToggle
               checked={settings.aWeightingEnabled}
-              onCheckedChange={(checked) => onSettingsChange({ aWeightingEnabled: checked })}
+              onChange={(checked) => onSettingsChange({ aWeightingEnabled: checked })}
             />
           </div>
         </Section>
@@ -238,9 +236,9 @@ export const DetectionTab = memo(function DetectionTab({
         >
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground font-mono tracking-wide">Filter instruments</span>
-            <Switch
+            <PillToggle
               checked={settings.harmonicFilterEnabled}
-              onCheckedChange={(checked) => onSettingsChange({ harmonicFilterEnabled: checked })}
+              onChange={(checked) => onSettingsChange({ harmonicFilterEnabled: checked })}
             />
           </div>
         </Section>
