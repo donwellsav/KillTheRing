@@ -14,6 +14,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.85.0',
+    date: '2026-03-13',
+    changes: [
+      { type: 'feat', description: 'Moves `markFeedbackEvent()` before the `shouldReportIssue()` gate in the DSP worker' },
+      { type: 'feat', description: 'Snapshot collection now triggers for ALL classified peaks — POSSIBLE_RING (purple), sub-threshold, instruments, and false positives' },
+      { type: 'feat', description: 'Previously only confirmed feedback that created UI advisories would trigger collection, meaning ring detections were silently dropped from the ML training pipeline' },
+      { type: 'feat', description: '[x] `tsc --noEmit` — zero errors' },
+      { type: 'feat', description: '[x] `pnpm test` — 195/195 pass' },
+      { type: 'feat', description: '[ ] Deploy → start analysis → verify rows appear in `spectral_snapshots` table for ring/purple detections' },
+    ],
+  },
+  {
     version: '0.84.0',
     date: '2026-03-12',
     changes: [
